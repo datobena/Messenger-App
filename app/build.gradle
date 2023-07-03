@@ -6,12 +6,12 @@ plugins {
 
 android {
     namespace 'ge.dbenadshis.messengerapp'
-    compileSdk 33
+    compileSdk 34
 
     defaultConfig {
         applicationId "ge.dbenadshis.messengerapp"
         minSdk 24
-        targetSdk 33
+        targetSdk 34
         versionCode 1
         versionName "1.0"
 
@@ -62,4 +62,6 @@ dependencies {
     androidTestImplementation "androidx.compose.ui:ui-test-junit4:$compose_ui_version"
     debugImplementation "androidx.compose.ui:ui-tooling:$compose_ui_version"
     debugImplementation "androidx.compose.ui:ui-test-manifest:$compose_ui_version"
+//    implementation "androidx.compose.material3:material3:1.1.1"
+    implementation "androidx.navigation:navigation-compose:2.7.0-beta02"
 }
