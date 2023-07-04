@@ -348,13 +348,13 @@ class HomepageActivity : ComponentActivity() {
         lazyListState: LazyListState?
     ) {
         val isHomePage = lazyListState != null
-        val scrolled = if(isHomePage) lazyListState!!.scrolled else 56.dp
+        val visibleHeight = if(isHomePage) 56.dp - lazyListState!!.scrolled*0.2f else 56.dp
 
         BottomAppBar(
             elevation = 8.dp,
             cutoutShape = CircleShape,
             modifier = Modifier
-                .height(56.dp - scrolled*0.2f)
+                .height(visibleHeight)
                 .fillMaxWidth(),
             backgroundColor = Color.White,
             contentColor = Color.DarkGray
