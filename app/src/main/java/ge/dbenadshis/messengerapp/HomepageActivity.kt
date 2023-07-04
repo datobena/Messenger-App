@@ -5,11 +5,15 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -22,19 +26,20 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.BottomAppBar
-import androidx.compose.material.BottomNavigation
 import androidx.compose.material.BottomNavigationItem
+import androidx.compose.material.Button
+import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.FabPosition
 import androidx.compose.material.FloatingActionButton
 import androidx.compose.material.FloatingActionButtonDefaults
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.OutlinedButton
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
 import androidx.compose.material.TextFieldDefaults
-import androidx.compose.material.TopAppBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
@@ -47,6 +52,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.paint
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
@@ -54,16 +61,154 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import ge.dbenadshis.messengerapp.ui.theme.MessengerAppTheme
+import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Locale
 import java.util.UUID
 import kotlin.math.floor
 
+
 class HomepageActivity : ComponentActivity() {
+    sealed class HomeScreen(val route: String) {
+        object Home : HomeScreen("home")
+        object Profile : HomeScreen("profile")
+    }
+
+    @Composable
+    fun HomeNavGraph() {
+        val navController = rememberNavController()
+        NavHost(navController, startDestination = HomeScreen.Home.route) {
+            composable(HomeScreen.Home.route) {
+                HomePage(navController)
+            }
+            composable(HomeScreen.Profile.route) {
+                ProfilePage(navController)
+            }
+        }
+    }
+
+    @Composable
+    fun ProfilePage(navController: NavController) {
+        Scaffold(
+            bottomBar = {
+                AddBottomAppBar(navController, null)
+            },
+            floatingActionButton = {
+                FloatingActionButton(
+                    onClick = { /* Handle plus button click */ },
+                    elevation = FloatingActionButtonDefaults.elevation(
+                        defaultElevation = 8.dp,
+                        pressedElevation = 0.dp
+                    ),
+                    backgroundColor = colorResource(id = R.color.background)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White)
+                }
+            },
+            isFloatingActionButtonDocked = true,
+            floatingActionButtonPosition = FabPosition.Center,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(it),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.avatar_image_placeholder),
+                    contentDescription = "Profile Image",
+                    modifier = Modifier
+                        .aspectRatio(1f)
+                        .padding(horizontal = getScreenWidth() * 0.2f)
+                        .fillMaxSize(0.6f)
+                        .clickable { /* Handle image click */ }
+                        .clip(CircleShape)
+                )
+
+                    TextField(
+                        value = "John Doe",
+                        onValueChange = {  },
+                        colors = TextFieldDefaults.textFieldColors(
+                            backgroundColor = colorResource(id = R.color.field_color),
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent
+                        ),
+                        textStyle = TextStyle(textAlign = TextAlign.Center, fontSize = 20.sp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .padding(bottom = 16.dp)
+                            .background(Color.White)
+                            .clip(CircleShape),
+                    )
+
+                // Profession TextField
+                TextField(
+                    value = "Software Engineer", // Replace with your state or variable
+                    onValueChange = { /* Handle profession change */ },
+                    colors = TextFieldDefaults.textFieldColors(
+                        backgroundColor = colorResource(id = R.color.field_color),
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent
+                    ),
+                    textStyle = TextStyle(textAlign = TextAlign.Center, fontSize = 20.sp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = 16.dp)
+                        .clip(CircleShape),
+                )
+
+                // Update Button
+                Button(
+                    onClick = { /* Handle update button click */ },
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxWidth(0.35f),
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = colorResource(id = R.color.background),
+                        disabledBackgroundColor = Color.LightGray,
+                        disabledContentColor = Color.Gray,
+                    ),
+                ) {
+                    Text("Update", color = Color.White, fontSize = 20.sp)
+                }
+
+                // Sign Out Button
+                OutlinedButton(
+                    onClick = { /* Handle sign out button click */ },
+                    modifier = Modifier.padding(bottom = 16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = Color.White,
+                        contentColor = Color.DarkGray,
+                        disabledBackgroundColor = Color.LightGray,
+                        disabledContentColor = Color.Gray,
+                    ),
+                    border = BorderStroke(1.5.dp, Color.Gray),
+                    elevation = ButtonDefaults.elevation(0.dp)
+                ) {
+                    Text("Sign Out",
+                        fontSize = 20.sp,
+                    )
+                }
+            }
+
+        }
+
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -73,7 +218,7 @@ class HomepageActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colors.background,
                 ) {
-                    HomePage()
+                    HomeNavGraph()
                 }
             }
         }
@@ -84,10 +229,14 @@ class HomepageActivity : ComponentActivity() {
         val configuration = LocalConfiguration.current
         return configuration.screenHeightDp.dp
     }
+    @Composable
+    fun getScreenWidth(): Dp {
+        val configuration = LocalConfiguration.current
+        return configuration.screenWidthDp.dp
+    }
 
     @Composable
-    fun SearchBar(
-    ) {
+    fun SearchBar() {
         var text by remember {
             mutableStateOf("")
         }
@@ -95,6 +244,7 @@ class HomepageActivity : ComponentActivity() {
         Row(
             modifier = Modifier
                 .fillMaxSize()
+                .background(colorResource(id = R.color.background))
                 .paint(
                     vectorImagePainter,
                     alignment = Alignment.TopCenter,
@@ -121,12 +271,13 @@ class HomepageActivity : ComponentActivity() {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp)
-                    .height(60.dp),
+                    .height(60.dp)
+                    .alpha(0.75f),
                 placeholder = {
                     Text(
                         "Search",
                         fontSize = 19.sp,
-                        color = Color.Gray,
+                        color = Color.DarkGray,
                     )
                 },
                 colors = TextFieldDefaults.textFieldColors(
@@ -141,55 +292,30 @@ class HomepageActivity : ComponentActivity() {
     }
 
     @Composable
-    fun HomePage() {
-        val chatItems = generateRandomChatItems(10)
+    fun HomePage(navController: NavController) {
+        val chatItems = generateRandomChatItems(20)
         val lazyListState = rememberLazyListState()
         Scaffold(
             bottomBar = {
-                BottomAppBar(
-                    cutoutShape = CircleShape,
-                    modifier = Modifier
-                        .animateContentSize(animationSpec = tween(300))
-                        .height(if (lazyListState.isScrolled) 0.dp else 56.dp)
-                        .fillMaxWidth()
-
-                ) {
-                    BottomNavigation{
-                        BottomNavigationItem(
-                            selected = true,
-                            onClick = { /*TODO*/ },
-                            icon = { Icon(Icons.Default.Home, contentDescription = "Home") }
-                        )
-                        BottomNavigationItem(
-                            selected = false,
-                            onClick = { },
-                            icon = { Icon(Icons.Default.Add, contentDescription = "Transparent") }
-                        )
-                        BottomNavigationItem(
-                            selected = false,
-                            onClick = { /*TODO*/ },
-                            icon = { Icon(Icons.Default.Settings, contentDescription = "Profile") }
-                        )
-                    }
-                }
+                AddBottomAppBar(navController, lazyListState)
             },
             floatingActionButton = {
                 FloatingActionButton(
                     onClick = { /* Handle plus button click */ },
                     elevation = FloatingActionButtonDefaults.elevation(
-                        defaultElevation = 0.dp,
+                        defaultElevation = 8.dp,
                         pressedElevation = 0.dp
                     ),
+                    backgroundColor = colorResource(id = R.color.background)
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Add")
+                    Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White)
                 }
             },
             isFloatingActionButtonDocked = true,
             floatingActionButtonPosition = FabPosition.Center,
             topBar = {
 
-                TopAppBar(
-                    backgroundColor = colorResource(id = R.color.background),
+                Box(
 
                     modifier = Modifier
                         .background(colorResource(R.color.background))
@@ -198,12 +324,12 @@ class HomepageActivity : ComponentActivity() {
                         .fillMaxWidth(),
 
 
-                ) {
+                    ) {
                     SearchBar()
                 }
 
             }
-        ) {
+        ){
             LazyColumn(
                 modifier = Modifier.padding(it),
                 state = lazyListState
@@ -215,8 +341,62 @@ class HomepageActivity : ComponentActivity() {
         }
 
     }
+    @Composable
+    fun AddBottomAppBar(
+        navController: NavController,
+        lazyListState: LazyListState?
+    ) {
+        val isHomePage = lazyListState != null
+        val isScrolled = isHomePage && lazyListState!!.isScrolled
 
-    data class ChatItem(val id: String, val name: String, val message: String, val profileImageID: Int, val time: Long)
+        BottomAppBar(
+            elevation = 8.dp,
+            cutoutShape = CircleShape,
+            modifier = Modifier
+                .height(if (isScrolled) 0.dp else 56.dp)
+                .fillMaxWidth(),
+            backgroundColor = Color.White,
+            contentColor = Color.DarkGray
+        ) {
+            BottomNavigationItem(
+                selected = isHomePage,
+                selectedContentColor = colorResource(id = R.color.background),
+                unselectedContentColor = Color.DarkGray,
+                onClick = {
+                    if (!isHomePage) {
+                        navController.navigateUp()
+                    }
+                },
+                icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
+            )
+            BottomNavigationItem(
+                selected = false,
+                enabled = false,
+                onClick = { },
+                icon = { Icon(Icons.Default.Add, contentDescription = "Transparent") }
+            )
+            BottomNavigationItem(
+                selected = !isHomePage,
+                selectedContentColor = colorResource(id = R.color.background),
+                unselectedContentColor = Color.DarkGray,
+                onClick = {
+                    if (isHomePage) {
+                        navController.navigate(HomeScreen.Profile.route)
+                    }
+                },
+                icon = { Icon(Icons.Default.Settings, contentDescription = "Profile") }
+            )
+        }
+    }
+
+
+    data class ChatItem(
+        val id: String,
+        val name: String,
+        val message: String,
+        val profileImageID: Int,
+        val time: Long
+    )
 
     fun generateRandomChatItems(count: Int): List<ChatItem> {
         val chatItems = mutableListOf<ChatItem>()
@@ -225,7 +405,15 @@ class HomepageActivity : ComponentActivity() {
             val id = UUID.randomUUID().toString()
             val name = "User ${i + 1}"
             val message = "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
-            chatItems.add(ChatItem(id, name, message, R.drawable.avatar_image_placeholder, Date().time))
+            chatItems.add(
+                ChatItem(
+                    id,
+                    name,
+                    message,
+                    R.drawable.avatar_image_placeholder,
+                    Date().time
+                )
+            )
         }
 
         return chatItems
@@ -270,7 +458,7 @@ class HomepageActivity : ComponentActivity() {
     @Composable
     fun DefaultPreview() {
         MessengerAppTheme {
-            HomePage()
+            HomeNavGraph()
         }
     }
 
@@ -281,20 +469,21 @@ class HomepageActivity : ComponentActivity() {
         val elapsedSeconds = floor(elapsedTime / 1000.0).toLong()
         val elapsedMinutes = floor(elapsedSeconds / 60.0).toLong()
         val elapsedHours = floor(elapsedMinutes / 60.0).toLong()
+        val locale = Locale.getDefault()
         val elapsedDays = floor(elapsedHours / 24.0).toLong()
 
         val timeAgo = when {
-            elapsedDays > 0 -> "$elapsedDays days ago"
-            elapsedHours > 0 -> "$elapsedHours hours ago"
-            elapsedMinutes > 0 -> "$elapsedMinutes minutes ago"
+            elapsedDays > 0 -> SimpleDateFormat("d MMM", locale).format(currentTime).uppercase()
+            elapsedHours > 0 -> "$elapsedHours hour"
+            elapsedMinutes > 0 -> "$elapsedMinutes min"
             else -> "Just now"
         }
 
-        Box (
+        Box(
             modifier = Modifier
                 .padding(start = 16.dp)
                 .fillMaxSize()
-                ){
+        ) {
             Text(
                 text = timeAgo,
                 color = Color.Gray,
@@ -304,6 +493,6 @@ class HomepageActivity : ComponentActivity() {
     }
 
     private val LazyListState.isScrolled: Boolean
-        get() = firstVisibleItemScrollOffset > 0
+        get() = firstVisibleItemScrollOffset > 0 || firstVisibleItemIndex > 0
 
 }
