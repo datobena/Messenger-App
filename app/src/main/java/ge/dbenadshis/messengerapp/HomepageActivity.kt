@@ -282,6 +282,7 @@ class HomepageActivity : ComponentActivity() {
                 },
                 colors = TextFieldDefaults.textFieldColors(
                     backgroundColor = colorResource(id = R.color.field_color),
+                    textColor = Color.Black,
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent,
                 ),
@@ -293,7 +294,7 @@ class HomepageActivity : ComponentActivity() {
 
     @Composable
     fun HomePage(navController: NavController) {
-        val chatItems = generateRandomChatItems(20)
+        val chatItems = generateRandomChatItems(6)
         val lazyListState = rememberLazyListState()
         Scaffold(
             bottomBar = {
@@ -320,7 +321,7 @@ class HomepageActivity : ComponentActivity() {
                     modifier = Modifier
                         .background(colorResource(R.color.background))
                         .animateContentSize(animationSpec = tween(300))
-                        .height(height = if (lazyListState.isScrolled) (32 + 60).dp else getScreenHeight() * 0.3f)
+                        .height(maxOf(92.dp, getScreenHeight() * 0.3f - lazyListState.scrolled ))
                         .fillMaxWidth(),
 
 
@@ -347,13 +348,13 @@ class HomepageActivity : ComponentActivity() {
         lazyListState: LazyListState?
     ) {
         val isHomePage = lazyListState != null
-        val isScrolled = isHomePage && lazyListState!!.isScrolled
+        val scrolled = if(isHomePage) lazyListState!!.scrolled else 56.dp
 
         BottomAppBar(
             elevation = 8.dp,
             cutoutShape = CircleShape,
             modifier = Modifier
-                .height(if (isScrolled) 0.dp else 56.dp)
+                .height(56.dp - scrolled*0.2f)
                 .fillMaxWidth(),
             backgroundColor = Color.White,
             contentColor = Color.DarkGray
@@ -426,13 +427,13 @@ class HomepageActivity : ComponentActivity() {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp, horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(vertical = 16.dp, horizontal = 16.dp),
+            verticalAlignment = Alignment.Top
         ) {
             // Profile picture
             Surface(
                 shape = CircleShape,
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier.size(48.dp),
             ) {
                 Image(
                     painter = painterResource(id = chatItem.profileImageID),
@@ -446,10 +447,12 @@ class HomepageActivity : ComponentActivity() {
                 modifier = Modifier.padding(start = 16.dp)
             ) {
                 Row {
-                    Text(text = chatItem.name)
+                    Text(text = chatItem.name,
+                        modifier = Modifier.padding(8.dp))
                     TimeIndicator(sentTime = chatItem.time)
                 }
-                Text(text = chatItem.message)
+                Text(text = chatItem.message,
+                    modifier = Modifier.padding(8.dp))
             }
         }
     }
@@ -487,12 +490,12 @@ class HomepageActivity : ComponentActivity() {
             Text(
                 text = timeAgo,
                 color = Color.Gray,
-                modifier = Modifier.align(Alignment.TopEnd)
+                modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
             )
         }
     }
 
-    private val LazyListState.isScrolled: Boolean
-        get() = firstVisibleItemScrollOffset > 0 || firstVisibleItemIndex > 0
+    private val LazyListState.scrolled: Dp
+        get() = (firstVisibleItemScrollOffset + (firstVisibleItemIndex*512)).dp
 
 }
