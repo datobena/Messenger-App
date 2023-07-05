@@ -13,4 +13,5 @@
     <color name="search_color">#1D5AC5</color>
     <color name="search_back">#B9D6EF</color>
     <color name="dark_blue">#0C1E2C</color>
+    <color name="background">#4B6ACF</color>
 </resources>
