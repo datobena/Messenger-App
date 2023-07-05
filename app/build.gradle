@@ -36,6 +36,11 @@ android {
     kotlinOptions {
         jvmTarget = '1.8'
     }
+    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+        kotlinOptions {
+            jvmTarget = '1.8'
+        }
+    }
     buildFeatures {
         compose true
     }
@@ -52,6 +57,7 @@ android {
 dependencies {
 
     implementation "com.google.dagger:hilt-android:2.44"
+    implementation 'com.google.firebase:firebase-database:20.2.2'
     kapt "com.google.dagger:hilt-android-compiler:2.44"
     implementation 'androidx.core:core-ktx:1.10.1'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.1'
@@ -69,6 +75,9 @@ dependencies {
 //    implementation "androidx.compose.material3:material3:1.1.1"
     implementation "androidx.navigation:navigation-compose:2.7.0-beta02"
     implementation "me.onebone:toolbar-compose:2.3.5"
+    implementation(platform("com.google.firebase:firebase-bom:32.1.1"))
+
+    implementation("com.google.firebase:firebase-database-ktx")
 }
 kapt {
     correctErrorTypes = true

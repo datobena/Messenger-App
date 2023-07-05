@@ -5,6 +5,7 @@ import android.os.Bundle
 
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.Image
 
 import androidx.compose.foundation.layout.Arrangement
@@ -32,6 +33,7 @@ import androidx.compose.material.Text
 import androidx.compose.material.TextField
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,6 +54,9 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import dagger.hilt.android.AndroidEntryPoint
+import ge.dbenadshis.messengerapp.database.UserViewModel
+import ge.dbenadshis.messengerapp.model.User
 import ge.dbenadshis.messengerapp.ui.theme.MessengerAppTheme
 
 sealed class Screen(val route: String) {
@@ -70,9 +75,11 @@ fun SetupNavGraph() {
         }
     }
 }
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val exampleViewModel: UserViewModel by viewModels()
         setContent {
             MessengerAppTheme {
                 // A surface container using the 'background' color from the theme
@@ -81,12 +88,17 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colors.background,
                 ) {
 //                    SetupNavGraph()
-                    SearchScreen()
+                   SearchScreen()
 //                    ChatScreen()
+
+                }
+                LaunchedEffect(key1 ="james" , block = {
+                    exampleViewModel.addUser(User(3,"james", "bond2", "programmer"))
+                    })
                 }
             }
         }
-    }
+
 }
 
 @Composable
