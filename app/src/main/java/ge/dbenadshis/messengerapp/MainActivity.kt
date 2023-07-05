@@ -1,12 +1,16 @@
 package ge.dbenadshis.messengerapp
 
+
 import android.os.Bundle
+
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+
 
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -15,7 +19,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.MaterialTheme
@@ -31,9 +38,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+
 import androidx.compose.ui.graphics.Color
+
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
+
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -70,7 +80,9 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colors.background,
                 ) {
-                    SetupNavGraph()
+//                    SetupNavGraph()
+                    SearchScreen()
+//                    ChatScreen()
                 }
             }
         }
@@ -84,6 +96,7 @@ fun SignUpScreen(){
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
@@ -117,6 +130,7 @@ fun LoginScreen(navController: NavHostController) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -151,6 +165,34 @@ fun LoginScreen(navController: NavHostController) {
 
 @Composable
 fun TextFieldFun(txt: String){
+    if (txt.endsWith("password")){
+        PasswordTextField(txt)
+        return
+    }
+    var text by remember {
+        mutableStateOf("")
+    }
+    TextField(
+        value = text,
+        onValueChange = {text = it},
+        shape = RoundedCornerShape(28.dp),
+        colors = TextFieldDefaults.textFieldColors(
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent,
+            backgroundColor = colorResource(id = R.color.field_color)
+        ),
+        label = {
+            Text(
+                txt,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth(),
+                fontSize = 18.sp)
+        },
+    )
+}
+@Composable
+fun PasswordTextField(txt: String){
     var text by remember {
         mutableStateOf("")
     }
