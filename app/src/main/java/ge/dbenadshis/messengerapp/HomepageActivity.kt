@@ -25,6 +25,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.AppBarDefaults
 import androidx.compose.material.BottomAppBar
 import androidx.compose.material.BottomNavigationItem
 import androidx.compose.material.Button
@@ -137,22 +138,22 @@ class HomepageActivity : ComponentActivity() {
                         .clip(CircleShape)
                 )
 
-                    TextField(
-                        value = "John Doe",
-                        onValueChange = {  },
-                        colors = TextFieldDefaults.textFieldColors(
-                            backgroundColor = colorResource(id = R.color.field_color),
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent
-                        ),
-                        textStyle = TextStyle(textAlign = TextAlign.Center, fontSize = 20.sp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                            .padding(bottom = 16.dp)
-                            .background(Color.White)
-                            .clip(CircleShape),
-                    )
+                TextField(
+                    value = "John Doe",
+                    onValueChange = { },
+                    colors = TextFieldDefaults.textFieldColors(
+                        backgroundColor = colorResource(id = R.color.field_color),
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent
+                    ),
+                    textStyle = TextStyle(textAlign = TextAlign.Center, fontSize = 20.sp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = 16.dp)
+                        .background(Color.White)
+                        .clip(CircleShape),
+                )
 
                 // Profession TextField
                 TextField(
@@ -199,7 +200,8 @@ class HomepageActivity : ComponentActivity() {
                     border = BorderStroke(1.5.dp, Color.Gray),
                     elevation = ButtonDefaults.elevation(0.dp)
                 ) {
-                    Text("Sign Out",
+                    Text(
+                        "Sign Out",
                         fontSize = 20.sp,
                     )
                 }
@@ -229,6 +231,7 @@ class HomepageActivity : ComponentActivity() {
         val configuration = LocalConfiguration.current
         return configuration.screenHeightDp.dp
     }
+
     @Composable
     fun getScreenWidth(): Dp {
         val configuration = LocalConfiguration.current
@@ -321,7 +324,7 @@ class HomepageActivity : ComponentActivity() {
                     modifier = Modifier
                         .background(colorResource(R.color.background))
                         .animateContentSize(animationSpec = tween(300))
-                        .height(maxOf(92.dp, getScreenHeight() * 0.3f - lazyListState.scrolled ))
+                        .height(maxOf(92.dp, getScreenHeight() * 0.3f - lazyListState.scrolled))
                         .fillMaxWidth(),
 
 
@@ -330,7 +333,7 @@ class HomepageActivity : ComponentActivity() {
                 }
 
             }
-        ){
+        ) {
             LazyColumn(
                 modifier = Modifier.padding(it),
                 state = lazyListState
@@ -342,22 +345,22 @@ class HomepageActivity : ComponentActivity() {
         }
 
     }
+
     @Composable
     fun AddBottomAppBar(
         navController: NavController,
         lazyListState: LazyListState?
     ) {
         val isHomePage = lazyListState != null
-        val visibleHeight = if(isHomePage) 56.dp - lazyListState!!.scrolled*0.2f else 56.dp
-
+        val visibleHeight = if (isHomePage) 56.dp - lazyListState!!.scrolled * 0.2f else 56.dp
         BottomAppBar(
-            elevation = 8.dp,
+            elevation = AppBarDefaults.BottomAppBarElevation,
             cutoutShape = CircleShape,
             modifier = Modifier
                 .height(visibleHeight)
                 .fillMaxWidth(),
             backgroundColor = Color.White,
-            contentColor = Color.DarkGray
+            contentColor = Color.DarkGray,
         ) {
             BottomNavigationItem(
                 selected = isHomePage,
@@ -388,6 +391,7 @@ class HomepageActivity : ComponentActivity() {
                 icon = { Icon(Icons.Default.Settings, contentDescription = "Profile") }
             )
         }
+
     }
 
 
@@ -447,12 +451,16 @@ class HomepageActivity : ComponentActivity() {
                 modifier = Modifier.padding(start = 16.dp)
             ) {
                 Row {
-                    Text(text = chatItem.name,
-                        modifier = Modifier.padding(8.dp))
+                    Text(
+                        text = chatItem.name,
+                        modifier = Modifier.padding(8.dp)
+                    )
                     TimeIndicator(sentTime = chatItem.time)
                 }
-                Text(text = chatItem.message,
-                    modifier = Modifier.padding(8.dp))
+                Text(
+                    text = chatItem.message,
+                    modifier = Modifier.padding(8.dp)
+                )
             }
         }
     }
@@ -490,12 +498,14 @@ class HomepageActivity : ComponentActivity() {
             Text(
                 text = timeAgo,
                 color = Color.Gray,
-                modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(8.dp)
             )
         }
     }
 
     private val LazyListState.scrolled: Dp
-        get() = (firstVisibleItemScrollOffset + (firstVisibleItemIndex*512)).dp
+        get() = (firstVisibleItemScrollOffset + (firstVisibleItemIndex * 512)).dp
 
 }
