@@ -8,5 +8,9 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="button_color">#2196F3</color>
+    <color name="background_chat">#1E84AC</color>
     <color name="field_color">#F1F6FA</color>
+    <color name="search_color">#1D5AC5</color>
+    <color name="search_back">#B9D6EF</color>
+    <color name="dark_blue">#0C1E2C</color>
 </resources>
