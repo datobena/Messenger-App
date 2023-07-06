@@ -74,7 +74,8 @@ import kotlin.math.floor
 
 
 @Composable
-fun ProfilePage(navController: NavController) {
+fun ProfilePage() {
+    val navController = LocalNavController.current
     Scaffold(
         bottomBar = {
             AddBottomAppBar(navController, null)
@@ -163,7 +164,9 @@ fun ProfilePage(navController: NavController) {
 
             // Sign Out Button
             OutlinedButton(
-                onClick = { /* Handle sign out button click */ },
+                onClick = { sharedPreferences!!.edit().clear().apply()
+                            navController.navigate(Screen.Start.route)
+                          },
                 modifier = Modifier.padding(bottom = 16.dp),
                 colors = ButtonDefaults.buttonColors(
                     backgroundColor = Color.White,
@@ -255,7 +258,8 @@ fun TopSearchBar() {
 }
 
 @Composable
-fun HomePage(navController: NavController) {
+fun HomePage() {
+    val navController = LocalNavController.current
     val chatItems = generateRandomChatItems(6)
     val lazyListState = rememberLazyListState()
     Scaffold(

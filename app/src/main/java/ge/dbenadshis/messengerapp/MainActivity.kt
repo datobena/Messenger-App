@@ -37,7 +37,9 @@ import androidx.compose.material.Text
 import androidx.compose.material.TextField
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -82,28 +84,33 @@ sealed class Screen(val route: String) {
 }
 
 @Composable
-fun SetupNavGraph(viewModel: UserViewModel) {
+fun SetupNavGraph() {
     val navController = rememberNavController()
 
-    NavHost(navController, startDestination = Screen.Start.route) {
-        composable(Screen.Login.route) {
-            LogInPage(navController)
-        }
-        composable(Screen.SignUp.route) {
-            SignUpScreen(navController)
-        }
-        composable(Screen.Home.route) {
-            HomePage(navController)
-        }
-        composable(Screen.Profile.route) {
-            ProfilePage(navController)
-        }
-        composable(Screen.Start.route) {
-            StartScreen(navController, viewModel)
+    CompositionLocalProvider(LocalNavController provides navController) {
+        NavHost(navController, startDestination = Screen.Start.route) {
+            composable(Screen.Login.route) {
+                LogInPage()
+            }
+            composable(Screen.SignUp.route) {
+                SignUpScreen()
+            }
+            composable(Screen.Home.route) {
+                HomePage()
+            }
+            composable(Screen.Profile.route) {
+                ProfilePage()
+            }
+            composable(Screen.Start.route) {
+                StartScreen()
+            }
         }
     }
 }
 
+val LocalNavController = compositionLocalOf<NavHostController> {
+    error("No NavController found!")
+}
 lateinit var viewModel: UserViewModel
 lateinit var chatViewModel: ChatViewModel
 var sharedPreferences: SharedPreferences? = null
@@ -124,7 +131,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colors.background,
                 ) {
-                    SetupNavGraph(viewModel)
+                    SetupNavGraph()
                 }
 
             }
@@ -134,7 +141,8 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun SignUpScreen(navController: NavHostController) {
+fun SignUpScreen() {
+    val navController = LocalNavController.current
     var mutNickname by remember {
         mutableStateOf("")
     }
@@ -259,7 +267,8 @@ fun Loader() {
 }
 
 @Composable
-fun StartScreen(navController: NavHostController, viewModel: UserViewModel) {
+fun StartScreen() {
+    val navController = LocalNavController.current
     Loader()
     LaunchedEffect(key1 = "james", block = {
         val nickname = sharedPreferences!!.getString("nickname", "")!!
@@ -281,7 +290,7 @@ fun StartScreen(navController: NavHostController, viewModel: UserViewModel) {
     })
 }
 @Composable
-fun LogInPage(navController: NavHostController){
+fun LogInPage(){
     var mutNickname by remember {
         mutableStateOf("")
     }
@@ -289,6 +298,7 @@ fun LogInPage(navController: NavHostController){
         mutableStateOf("")
     }
     Surface(color = MaterialTheme.colors.background) {
+        val navController = LocalNavController.current
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -358,7 +368,7 @@ fun LogInPage(navController: NavHostController){
                     .align(Alignment.BottomCenter),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                RegisterButton(navController)
+                RegisterButton()
             }
         }
     }
@@ -413,7 +423,8 @@ fun MainButton(txt: String, onClick: () -> Unit) {
 }
 
 @Composable
-fun RegisterButton(navController: NavHostController) {
+fun RegisterButton() {
+    val navController = LocalNavController.current
     Column(
         modifier = Modifier
             .fillMaxWidth()
