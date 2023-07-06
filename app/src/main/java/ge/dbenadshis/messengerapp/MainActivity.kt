@@ -22,12 +22,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
+import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.OutlinedButton
 import androidx.compose.material.Surface
@@ -47,6 +49,8 @@ import androidx.compose.ui.graphics.Color
 
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
@@ -71,6 +75,7 @@ sealed class Screen(val route: String) {
     object Login : Screen("login")
     object SignUp : Screen("signup")
 
+    object Start : Screen("start")
     object Home : Screen("home")
     object Profile : Screen("profile")
 }
@@ -79,9 +84,9 @@ sealed class Screen(val route: String) {
 fun SetupNavGraph(viewModel: UserViewModel) {
     val navController = rememberNavController()
 
-    NavHost(navController, startDestination = Screen.Login.route) {
+    NavHost(navController, startDestination = Screen.Start.route) {
         composable(Screen.Login.route) {
-            LoginScreen(navController, viewModel)
+            LogInPage(navController)
         }
         composable(Screen.SignUp.route) {
             SignUpScreen(navController)
@@ -91,6 +96,9 @@ fun SetupNavGraph(viewModel: UserViewModel) {
         }
         composable(Screen.Profile.route) {
             ProfilePage(navController)
+        }
+        composable(Screen.Start.route) {
+            StartScreen(navController, viewModel)
         }
     }
 }
@@ -109,15 +117,11 @@ class MainActivity : ComponentActivity() {
             applicationContext.getSharedPreferences("message-app", Context.MODE_PRIVATE)
         setContent {
             MessengerAppTheme {
-                // A surface container using the 'background' color from the theme
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colors.background,
                 ) {
                     SetupNavGraph(viewModel)
-//                   SearchScreen()
-//                    ChatScreen()
-
                 }
 
             }
@@ -226,15 +230,34 @@ fun SignUpScreen(navController: NavHostController) {
         }
     }
 }
+@Composable
+fun Loader() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally,verticalArrangement = Arrangement.Center) {
+            Text(
+                text = "PLEASE WAIT...",
+                style = TextStyle(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 24.sp
+                )
+            )
+
+            CircularProgressIndicator(
+                modifier = Modifier
+                    .size(56.dp),
+                strokeWidth = 4.dp,
+                color = Color.Gray,
+            )
+        }
+    }
+}
 
 @Composable
-fun LoginScreen(navController: NavHostController, viewModel: UserViewModel) {
-    var mutNickname by remember {
-        mutableStateOf("")
-    }
-    var mutPass by remember {
-        mutableStateOf("")
-    }
+fun StartScreen(navController: NavHostController, viewModel: UserViewModel) {
+    Loader()
     LaunchedEffect(key1 = "james", block = {
         val nickname = sharedPreferences!!.getString("nickname", "")!!
         val pass = sharedPreferences!!.getString("pass", "")!!
@@ -244,14 +267,24 @@ fun LoginScreen(navController: NavHostController, viewModel: UserViewModel) {
                     override fun onUserExists(user: User) {
                         navController.navigate(Screen.Home.route)
                     }
-
                     override fun onUserDoesNotExist() {
+                        navController.navigate(Screen.Login.route)
                     }
-
                 }
             )
+        }else{
+            navController.navigate(Screen.Login.route)
         }
     })
+}
+@Composable
+fun LogInPage(navController: NavHostController){
+    var mutNickname by remember {
+        mutableStateOf("")
+    }
+    var mutPass by remember {
+        mutableStateOf("")
+    }
     Surface(color = MaterialTheme.colors.background) {
         Box(
             modifier = Modifier
@@ -327,7 +360,6 @@ fun LoginScreen(navController: NavHostController, viewModel: UserViewModel) {
         }
     }
 }
-
 fun signInAccount(navController: NavHostController, nickname: String, pass: String) {
     CoroutineScope(Dispatchers.Default).launch {
         viewModel.checkUser(nickname, pass, object : UserRepositoryImpl.UserExistenceCallback {
@@ -360,64 +392,6 @@ fun signUpAccount(navController: NavHostController, nickname: String, pass: Stri
     }
 
 }
-
-@Composable
-fun TextFieldFun(txt: String) {
-    if (txt.endsWith("password")) {
-        PasswordTextField(txt)
-        return
-    }
-    var text by remember {
-        mutableStateOf("")
-    }
-    TextField(
-        value = text,
-        onValueChange = { text = it },
-        shape = RoundedCornerShape(28.dp),
-        colors = TextFieldDefaults.textFieldColors(
-            focusedIndicatorColor = Color.Transparent,
-            unfocusedIndicatorColor = Color.Transparent,
-            backgroundColor = colorResource(id = R.color.field_color)
-        ),
-        label = {
-            Text(
-                txt,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth(),
-                fontSize = 18.sp
-            )
-        },
-    )
-}
-
-@Composable
-fun PasswordTextField(txt: String) {
-    var text by remember {
-        mutableStateOf("")
-    }
-    TextField(
-        value = text,
-        onValueChange = { text = it },
-        shape = RoundedCornerShape(28.dp),
-        colors = TextFieldDefaults.textFieldColors(
-            focusedIndicatorColor = Color.Transparent,
-            unfocusedIndicatorColor = Color.Transparent,
-            backgroundColor = colorResource(id = R.color.field_color)
-        ),
-        label = {
-            Text(
-                txt,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth(),
-                fontSize = 18.sp
-            )
-        },
-        visualTransformation = PasswordVisualTransformation()
-    )
-}
-
 @Composable
 fun MainButton(txt: String, onClick: () -> Unit) {
     Button(
