@@ -6,6 +6,8 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import javax.inject.Named
+import javax.inject.Singleton
 
 
 @Module
@@ -14,9 +16,17 @@ object AppModule {
 
 
     @Provides
-    fun provideFirebaseInstance(): DatabaseReference{
+    @Singleton
+    @Named("users")
+    fun provideFirebaseInstanceUsers(): DatabaseReference{
         return FirebaseDatabase.getInstance("https://messenger-app-dbds-default-rtdb.europe-west1.firebasedatabase.app/").getReference("users")
     }
 
+    @Provides
+    @Singleton
+    @Named("messages")
+    fun provideFirebaseInstanceMessages(): DatabaseReference{
+        return FirebaseDatabase.getInstance("https://messenger-app-dbds-default-rtdb.europe-west1.firebasedatabase.app/").getReference("messages")
+    }
 
 }

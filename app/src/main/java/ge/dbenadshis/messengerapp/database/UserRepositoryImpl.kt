@@ -7,9 +7,10 @@ import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.ktx.getValue
 import ge.dbenadshis.messengerapp.model.*
 import javax.inject.Inject
+import javax.inject.Named
 
 class UserRepositoryImpl @Inject constructor(
-    private val firebaseApp: DatabaseReference
+    @Named("users") private val firebaseApp: DatabaseReference
 ) : UserRepository{
     override suspend fun addUser(nickname: String, pass: String, work: String, callback: ChildExistenceCallback) {
         nicknameExists(nickname, object : ChildExistenceCallback{

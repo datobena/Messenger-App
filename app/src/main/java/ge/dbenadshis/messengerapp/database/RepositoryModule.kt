@@ -16,5 +16,11 @@ abstract class RepositoryModule {
         userRepositoryImpl: UserRepositoryImpl
     ): UserRepository
 
+    @Binds
+    @Singleton
+    abstract fun bindChatRepository(
+        charRepositoryImpl: ChatRepositoryImpl
+    ): ChatRepository
+
 
 }

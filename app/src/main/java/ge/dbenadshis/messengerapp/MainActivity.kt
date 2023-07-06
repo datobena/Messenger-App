@@ -63,6 +63,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.google.firebase.database.DataSnapshot
 import dagger.hilt.android.AndroidEntryPoint
+import ge.dbenadshis.messengerapp.database.ChatViewModel
 import ge.dbenadshis.messengerapp.database.UserRepositoryImpl
 import ge.dbenadshis.messengerapp.database.UserViewModel
 import ge.dbenadshis.messengerapp.model.User
@@ -104,6 +105,7 @@ fun SetupNavGraph(viewModel: UserViewModel) {
 }
 
 lateinit var viewModel: UserViewModel
+lateinit var chatViewModel: ChatViewModel
 var sharedPreferences: SharedPreferences? = null
 
 @AndroidEntryPoint
@@ -111,6 +113,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         viewModel = ViewModelProvider(this)[UserViewModel::class.java]
+        chatViewModel = ViewModelProvider(this)[ChatViewModel::class.java]
 
 
         sharedPreferences =
