@@ -77,6 +77,7 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:32.1.1"))
 
     implementation("com.google.firebase:firebase-database-ktx")
+    implementation 'org.mindrot:jbcrypt:0.4'
 }
 kapt {
     correctErrorTypes = true
