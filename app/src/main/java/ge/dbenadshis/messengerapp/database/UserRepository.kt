@@ -1,7 +1,8 @@
 package ge.dbenadshis.messengerapp.database
 
-import ge.dbenadshis.messengerapp.model.User
 
 interface UserRepository {
-    suspend fun addUser(user: User)
+    suspend fun addUser(nickname: String, pass: String, work: String, callback: UserRepositoryImpl.ChildExistenceCallback)
+
+    suspend fun checkUser(nickname: String, pass: String, callback: UserRepositoryImpl.UserExistenceCallback)
 }
