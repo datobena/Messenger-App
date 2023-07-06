@@ -3,6 +3,7 @@ package ge.dbenadshis.messengerapp.database
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import ge.dbenadshis.messengerapp.model.User
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -10,6 +11,7 @@ import javax.inject.Inject
 class UserViewModel @Inject constructor(
     private val userRepository: UserRepository
 ) : ViewModel(){
+    var curUser = User()
     suspend fun addUser(nickname: String, pass: String, work: String, callback: UserRepositoryImpl.ChildExistenceCallback){
         val repoImpl = userRepository as UserRepositoryImpl
         repoImpl.addUser(nickname, pass, work, callback)

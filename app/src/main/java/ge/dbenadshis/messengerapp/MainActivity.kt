@@ -111,7 +111,7 @@ fun SetupNavGraph() {
 val LocalNavController = compositionLocalOf<NavHostController> {
     error("No NavController found!")
 }
-lateinit var viewModel: UserViewModel
+lateinit var userViewModel: UserViewModel
 lateinit var chatViewModel: ChatViewModel
 var sharedPreferences: SharedPreferences? = null
 
@@ -119,7 +119,7 @@ var sharedPreferences: SharedPreferences? = null
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        viewModel = ViewModelProvider(this)[UserViewModel::class.java]
+        userViewModel = ViewModelProvider(this)[UserViewModel::class.java]
         chatViewModel = ViewModelProvider(this)[ChatViewModel::class.java]
 
 
@@ -274,9 +274,10 @@ fun StartScreen() {
         val nickname = sharedPreferences!!.getString("nickname", "")!!
         val pass = sharedPreferences!!.getString("pass", "")!!
         if (nickname != "") {
-            viewModel.checkUser(nickname, pass,
+            userViewModel.checkUser(nickname, pass,
                 object : UserRepositoryImpl.UserExistenceCallback {
                     override fun onUserExists(user: User) {
+                        userViewModel.curUser = user
                         navController.navigate(Screen.Home.route)
                     }
                     override fun onUserDoesNotExist() {
@@ -373,12 +374,18 @@ fun LogInPage(){
         }
     }
 }
+
+private fun saveUserAndNavigate(navController: NavHostController, nickname: String, pass: String, work: String){
+    sharedPreferences!!.edit().putString("nickname", nickname).putString("pass", pass).apply()
+    userViewModel.curUser = User(nickname, pass, work)
+    navController.navigate(Screen.Home.route)
+}
+
 fun signInAccount(navController: NavHostController, nickname: String, pass: String) {
     CoroutineScope(Dispatchers.Default).launch {
-        viewModel.checkUser(nickname, pass, object : UserRepositoryImpl.UserExistenceCallback {
+        userViewModel.checkUser(nickname, pass, object : UserRepositoryImpl.UserExistenceCallback {
             override fun onUserExists(user: User) {
-                sharedPreferences!!.edit().putString("nickname", nickname).putString("pass", pass).apply()
-                navController.navigate(Screen.Home.route)
+                saveUserAndNavigate(navController, nickname, pass, user.work)
             }
 
             override fun onUserDoesNotExist() {
@@ -391,14 +398,13 @@ fun signInAccount(navController: NavHostController, nickname: String, pass: Stri
 }
 fun signUpAccount(navController: NavHostController, nickname: String, pass: String, work: String) {
     CoroutineScope(Dispatchers.Default).launch {
-        viewModel.addUser(nickname, pass, work, object : UserRepositoryImpl.ChildExistenceCallback {
+        userViewModel.addUser(nickname, pass, work, object : UserRepositoryImpl.ChildExistenceCallback {
             override fun onChildExists(dataSnapshot: DataSnapshot) {
                 Toast.makeText(navController.context, "Nickname already exists!", Toast.LENGTH_LONG).show()
             }
 
             override fun onChildDoesNotExist() {
-                sharedPreferences!!.edit().putString("nickname", nickname).putString("pass", pass).apply()
-                navController.navigate(Screen.Home.route)
+                saveUserAndNavigate(navController, nickname, pass, work)
             }
 
         })

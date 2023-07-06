@@ -114,7 +114,7 @@ fun ProfilePage() {
             )
 
             TextField(
-                value = "John Doe",
+                value = userViewModel.curUser.nickname,
                 onValueChange = { },
                 colors = TextFieldDefaults.textFieldColors(
                     backgroundColor = colorResource(id = R.color.field_color),
@@ -132,7 +132,7 @@ fun ProfilePage() {
 
             // Profession TextField
             TextField(
-                value = "Software Engineer", // Replace with your state or variable
+                value = userViewModel.curUser.work,
                 onValueChange = { /* Handle profession change */ },
                 colors = TextFieldDefaults.textFieldColors(
                     backgroundColor = colorResource(id = R.color.field_color),
