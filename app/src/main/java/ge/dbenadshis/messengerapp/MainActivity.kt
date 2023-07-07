@@ -1,6 +1,7 @@
 package ge.dbenadshis.messengerapp
 
 
+import ChatScreen
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
@@ -76,11 +77,13 @@ import kotlinx.coroutines.launch
 
 sealed class Screen(val route: String) {
     object Login : Screen("login")
+    object Search : Screen("search")
     object SignUp : Screen("signup")
 
     object Start : Screen("start")
     object Home : Screen("home")
     object Profile : Screen("profile")
+    object Chat : Screen("chat")
 }
 
 @Composable
@@ -103,6 +106,12 @@ fun SetupNavGraph() {
             }
             composable(Screen.Start.route) {
                 StartScreen()
+            }
+            composable(Screen.Search.route) {
+                SearchScreen()
+            }
+            composable(Screen.Chat.route) {
+                ChatScreen(userViewModel.curUser.nickname, chatViewModel.currentChatFriend.nickname , chatViewModel)
             }
         }
     }
@@ -132,6 +141,7 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colors.background,
                 ) {
                     SetupNavGraph()
+//                    ChatScreen("dato", "Dimitri", chatViewModel)
                 }
 
             }
@@ -277,6 +287,7 @@ fun StartScreen() {
             userViewModel.checkUser(nickname, pass,
                 object : UserRepositoryImpl.UserExistenceCallback {
                     override fun onUserExists(user: User) {
+                        sharedPreferences!!.edit().putString("nickname", user.nickname).putString("pass", pass).apply()
                         userViewModel.curUser = user
                         navController.navigate(Screen.Home.route)
                     }

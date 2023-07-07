@@ -36,6 +36,7 @@ import androidx.compose.material.icons.filled.Send
 import androidx.compose.runtime.Composable
 
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 
@@ -53,6 +54,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ge.dbenadshis.messengerapp.R
+import ge.dbenadshis.messengerapp.Utils.Companion.formatDate
+import ge.dbenadshis.messengerapp.database.ChatViewModel
+import ge.dbenadshis.messengerapp.model.Message
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 import me.onebone.toolbar.CollapsingToolbarScaffold
 
@@ -61,23 +68,15 @@ import me.onebone.toolbar.rememberCollapsingToolbarScaffoldState
 
 @SuppressLint("UnusedMaterialScaffoldPaddingParameter")
 @Composable
-fun ChatScreen() {
-    ChatScreenCreate()
+fun ChatScreen(currentUser: String, friend: String, chatViewModel: ChatViewModel) {
+    ChatScreenCreate(currentUser, friend, chatViewModel)
 }
 @Composable
-fun ChatScreenCreate() {
+fun ChatScreenCreate(currentUser: String, friend: String, chatViewModel: ChatViewModel) {
     val state = rememberCollapsingToolbarScaffoldState()
     var enabled by remember { mutableStateOf(true) }
-    var messages by remember {
-        mutableStateOf(listOf<ChatMessage>(ChatMessage("Hello","1 pm", false),
-            ChatMessage("Hello","1 pm", true),
-            ChatMessage("what are you doing bro","1 pm", false),
-            ChatMessage("Hello","1 pm", true),
-            ChatMessage("what are you doing bro","1 pm", false), ChatMessage("Hello","1 pm", true),
-            ChatMessage("what are you doing bro","1 pm", false),ChatMessage("Hello","1 pm", true),
-            ChatMessage("what are you doing bro","1 pm", false))
-        )
-    }
+    val messages by chatViewModel.allMessages.observeAsState(listOf())
+
     Box {
         CollapsingToolbarScaffold(
             modifier = Modifier.fillMaxSize(),
@@ -103,7 +102,10 @@ fun ChatScreenCreate() {
                         Icons.Default.ArrowBack,
                         contentDescription = "back",
                         modifier = Modifier
-                            .padding(start = 8.dp, top = 24.dp - (12 * (1-state.toolbarState.progress)).dp)
+                            .padding(
+                                start = 8.dp,
+                                top = 24.dp - (12 * (1 - state.toolbarState.progress)).dp
+                            )
                             .width(45.dp)
                             .height(45.dp)
                             .align(Alignment.TopStart)
@@ -114,16 +116,20 @@ fun ChatScreenCreate() {
                     )
                     Column(
                         modifier = Modifier
-                            .padding(start = 16.dp + (48*(1-state.toolbarState.progress)).dp,top = mn, bottom = 8.dp)
+                            .padding(
+                                start = 16.dp + (48 * (1 - state.toolbarState.progress)).dp,
+                                top = mn,
+                                bottom = 8.dp
+                            )
                             .align(Alignment.CenterStart)
                     ) {
                         Text(
-                            text = "James Bond",
+                            text = friend,
                             color = Color.White,
                             fontSize = textSize
                         )
                         Text(
-                            text = "007",
+                            text = chatViewModel.currentChatFriend.work,
                             color = Color.White,
                             fontSize = textSize * (0.7)
                         )
@@ -149,19 +155,25 @@ fun ChatScreenCreate() {
                 items(
                    messages
                 ) { message ->
-                    ChatMessageItem(message)
+                    if(chatViewModel.currentChatFriend.nickname == message.receiver ||
+                        chatViewModel.currentChatFriend.nickname == message.sender) {
+                        ChatMessageItem(message, currentUser)
+                    }
                 }
             }
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomEnd),
             ) {
-                ChatBottom(onclick = {txt ->  messages = messages + txt})
+                ChatBottom(onclick = { txt ->
+                    CoroutineScope(Dispatchers.Default).launch {
+                        chatViewModel.addMessage(Message(currentUser,friend, txt.content, txt.date))
+                    }
+                })
             }
         }
     }
 }
-
 @Composable
 fun ChatBottom(onclick: (txt: ChatMessage) -> Unit) {
     var text by remember {
@@ -178,7 +190,7 @@ fun ChatBottom(onclick: (txt: ChatMessage) -> Unit) {
             trailingIcon = {IconButton(
                 onClick = {
                     if (text.isNotEmpty()) {
-                        onclick(ChatMessage(text, "1 pm", true))
+                        onclick(ChatMessage(text, System.currentTimeMillis().toString(), true))
                         text = ""
                     }
                 },
@@ -216,22 +228,23 @@ fun ChatBottom(onclick: (txt: ChatMessage) -> Unit) {
     }
 }
 @Composable
-fun ChatMessageItem(message: ChatMessage) {
+fun ChatMessageItem(message: Message, currUser:String) {
+    val isSentByCurrentUser = (currUser == message.sender)
     val shape = RoundedCornerShape(
         topStart = 24.dp,
         topEnd = 24.dp,
-        bottomStart = if (!message.isSentByCurrentUser) 0.dp else 24.dp,
-        bottomEnd = if (message.isSentByCurrentUser) 0.dp else 24.dp,
+        bottomStart = if (!isSentByCurrentUser) 0.dp else 24.dp,
+        bottomEnd = if (isSentByCurrentUser) 0.dp else 24.dp,
     )
     Row(
         modifier = Modifier
             .padding(8.dp)
             .fillMaxWidth(),
-        horizontalArrangement = if (message.isSentByCurrentUser) Arrangement.End else Arrangement.Start
+        horizontalArrangement = if (isSentByCurrentUser) Arrangement.End else Arrangement.Start
     ) {
-        if(message.isSentByCurrentUser){
+        if(isSentByCurrentUser){
             Text(
-                text = message.date,
+                text = message.date.formatDate(),
                 modifier = Modifier
                     .padding(horizontal = 8.dp, vertical = 4.dp)
                     .align(Alignment.CenterVertically),
@@ -242,18 +255,18 @@ fun ChatMessageItem(message: ChatMessage) {
             modifier = Modifier,
             elevation = 4.dp,
             shape = shape,
-            backgroundColor = getBubbleColor(message.isSentByCurrentUser)
+            backgroundColor = getBubbleColor(isSentByCurrentUser)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text(text = message.content, color = if (message.isSentByCurrentUser) colorResource(
+                Text(text = message.message, color = if (isSentByCurrentUser) colorResource(
                     id = R.color.white
                 ) else colorResource(id = R.color.dark_blue))
             }
         }
 
-        if(!message.isSentByCurrentUser){
+        if(!isSentByCurrentUser){
             Text(
-                text = message.date,
+                text = message.date.formatDate(),
                 modifier = Modifier
                     .padding(horizontal = 8.dp, vertical = 4.dp)
                     .align(Alignment.CenterVertically),

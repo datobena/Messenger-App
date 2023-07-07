@@ -25,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,76 +38,71 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import ge.dbenadshis.messengerapp.model.User
 
 
 @Composable
 fun SearchScreen() {
-    var profiles  by remember {
-        mutableStateOf(listOf<Profile>())
-    }
-    profiles = generateDummyProfiles()
-
+    userViewModel.setAllUsers()
     Scaffold(
         topBar = { SearchBar() }
     ){
-        LazyColumn(modifier = Modifier.padding(it)) {
-            items(profiles) { profile ->
-                ProfileItem(profile = profile)
+        val isSearching by userViewModel.isSearching.collectAsState()
+        val profiles by userViewModel.persons.collectAsState()
+        if(isSearching){
+            Loader()
+        }else {
+            LazyColumn(modifier = Modifier.padding(it)) {
+                items(profiles) { profile ->
+                    ProfileItem(profile)
+                }
             }
         }
     }
 }
 
 @Composable
-fun ProfileItem(profile: Profile) {
+fun ProfileItem(user: User) {
+    var isChat by remember {
+        mutableStateOf(false)
+    }
     Row(
         modifier = Modifier
             .padding(16.dp)
             .fillMaxWidth()
             .clickable {
-                Log.d("Profile", "${profile.name} : ${profile.subtitle}")
+                isChat = true
             },
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Image(
-            painter = painterResource(id = profile.photoResId),
-            contentDescription = "Profile Photo",
-            modifier = Modifier
-                .size(60.dp)
-                .clip(CircleShape)
-        )
-        Spacer(modifier = Modifier.width(16.dp))
-        Column {
-            Text(
-                text = profile.name,
-                fontSize = 18.sp
+        if (isChat){
+            chatViewModel.currentChatFriend = user
+            LocalNavController.current.navigate(Screen.Chat.route)
+        }else {
+            Image(
+                painter = painterResource(id = R.drawable.avatar_image_placeholder), // TODO: change
+                contentDescription = "Profile Photo",
+                modifier = Modifier
+                    .size(60.dp)
+                    .clip(CircleShape)
             )
-            Text(
-                text = profile.subtitle,
-                fontSize = 14.sp, color = Color.Gray
-            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column {
+                Text(
+                    text = user.nickname,
+                    fontSize = 18.sp
+                )
+                Text(
+                    text = user.work,
+                    fontSize = 14.sp, color = Color.Gray
+                )
+            }
         }
     }
 }
-data class Profile(
-    val name: String,
-    val subtitle: String,
-    val photoResId: Int
-)
-
-fun generateDummyProfiles(): List<Profile> {
-    return listOf(
-        Profile("John Doe", "Software Engineer", R.drawable.avatar_image_placeholder),
-        Profile("Jane Smith", "Product Manager", R.drawable.avatar_image_placeholder),
-        Profile("Alex Johnson", "Graphic Designer", R.drawable.avatar_image_placeholder),
-
-        )
-}
 @Composable
 fun SearchBar(){
-    var text by remember {
-        mutableStateOf("")
-    }
+    val searchText by userViewModel.searchText.collectAsState()
     Row(
         modifier = Modifier
             .height(100.dp)
@@ -127,8 +123,8 @@ fun SearchBar(){
             tint = Color.White,
         )
         TextField(
-            value = text,
-            onValueChange = { text = it },
+            value = searchText,
+            onValueChange = userViewModel::onSearchTextChange,
             leadingIcon = {
                 Icon(
                     Icons.Filled.Search,

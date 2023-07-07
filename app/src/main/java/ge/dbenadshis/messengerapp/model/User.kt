@@ -8,7 +8,13 @@ data class User(
     var nickname: String = "",
     var passHash: String = "",
     var work: String = ""
-): Serializable
+): Serializable{
+    fun matchQuery(query: String): Boolean{
+        // Add more complex search logic here.
+        return nickname.contains(query, ignoreCase = false)
+    }
+
+}
 class PasswordUtils {
     companion object {
         fun hashPassword(password: String): String {

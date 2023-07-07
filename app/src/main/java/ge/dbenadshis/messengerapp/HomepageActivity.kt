@@ -82,7 +82,7 @@ fun ProfilePage() {
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { /* Handle plus button click */ },
+                onClick = { navController.navigate(Screen.Search.route)},
                 elevation = FloatingActionButtonDefaults.elevation(
                     defaultElevation = 8.dp,
                     pressedElevation = 0.dp
@@ -149,7 +149,7 @@ fun ProfilePage() {
 
             // Update Button
             Button(
-                onClick = { /* Handle update button click */ },
+                onClick = {},
                 modifier = Modifier
                     .padding(16.dp)
                     .fillMaxWidth(0.35f),
@@ -268,7 +268,7 @@ fun HomePage() {
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { /* Handle plus button click */ },
+                onClick = { navController.navigate(Screen.Search.route) },
                 elevation = FloatingActionButtonDefaults.elevation(
                     defaultElevation = 8.dp,
                     pressedElevation = 0.dp
@@ -339,7 +339,7 @@ fun AddBottomAppBar(
         BottomNavigationItem(
             selected = false,
             enabled = false,
-            onClick = { },
+            onClick = { navController.navigate(Screen.Search.route)},
             icon = { Icon(Icons.Default.Add, contentDescription = "Transparent") }
         )
         BottomNavigationItem(
