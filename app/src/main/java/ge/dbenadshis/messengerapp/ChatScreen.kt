@@ -157,7 +157,7 @@ fun ChatScreenCreate(currentUser: String, friend: String, chatViewModel: ChatVie
                 ) { message ->
                     if(chatViewModel.currentChatFriend.nickname == message.receiver ||
                         chatViewModel.currentChatFriend.nickname == message.sender) {
-                        ChatMessageItem(message, currentUser)
+                        ChatMessageItem(message)
                     }
                 }
             }
@@ -228,8 +228,8 @@ fun ChatBottom(onclick: (txt: ChatMessage) -> Unit) {
     }
 }
 @Composable
-fun ChatMessageItem(message: Message, currUser:String) {
-    val isSentByCurrentUser = (currUser == message.sender)
+fun ChatMessageItem(message: Message) {
+    val isSentByCurrentUser = message.isSentByCurrentUser
     val shape = RoundedCornerShape(
         topStart = 24.dp,
         topEnd = 24.dp,

@@ -26,7 +26,7 @@ object AppModule {
     @Singleton
     @Named("messages")
     fun provideFirebaseInstanceMessages(): DatabaseReference{
-        return FirebaseDatabase.getInstance("https://messenger-app-dbds-default-rtdb.europe-west1.firebasedatabase.app/").getReference("messages")
+        return FirebaseDatabase.getInstance("https://messenger-app-dbds-default-rtdb.europe-west1.firebasedatabase.app/").getReference("users")
     }
 
 }

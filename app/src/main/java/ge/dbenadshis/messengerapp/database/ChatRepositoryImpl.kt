@@ -25,16 +25,12 @@ class ChatRepositoryImpl @Inject constructor(
     init{
         val sharedPreferences =
             applicationContext.getSharedPreferences("message-app", Context.MODE_PRIVATE)
+        val currUser = sharedPreferences.getString("nickname","")!!
 
-        messages.addChildEventListener(object : ChildEventListener{
+        messages.child(currUser).child("messages").addChildEventListener(object : ChildEventListener{
             override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
-                val currUser = sharedPreferences.getString("nickname","")
                 val message = snapshot.getValue(Message::class.java) ?: return
-                if (message.sender == currUser ||
-                        message.receiver == currUser) {
-//                        println(message.toString())
-                        addMessageInList(message)
-                }
+                addMessageInList(message)
             }
 
             override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
@@ -62,7 +58,9 @@ class ChatRepositoryImpl @Inject constructor(
         _messages.value = updatedList
     }
     override suspend fun addMessage(message: Message) {
-        messages.push().setValue(message)
+        messages.child(message.receiver).child("messages").push().setValue(message)
+        message.isSentByCurrentUser  = true
+        messages.child(message.sender).child("messages").push().setValue(message)
     }
 
     override suspend fun generateMessages(sender: String, receiver: String) {
