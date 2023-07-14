@@ -1,5 +1,6 @@
 package ge.dbenadshis.messengerapp.database
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -20,11 +21,12 @@ import javax.inject.Inject
 @OptIn(FlowPreview::class)
 @HiltViewModel
 class UserViewModel @Inject constructor(
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    imageRepository: ImageRepository
 ) : ViewModel(){
 
-    val repo = userRepository as UserRepositoryImpl
-
+    val userRepo = userRepository as UserRepositoryImpl
+    private val imageRepo = imageRepository as ImageRepositoryImpl
     var curUser = User()
 
 
@@ -35,19 +37,14 @@ class UserViewModel @Inject constructor(
     val isSearching = _isSearching.asStateFlow()
 
     private  var _persons = MutableStateFlow(listOf<User>())
-    private var lastSearched = listOf<User>()
     var persons = searchText
         .debounce(1000L)
         .onEach { _isSearching.update { true } }
         .combine(_persons) { text, persons ->
-            if (text.isEmpty()) {
-                lastSearched = persons
+            if (text.length < 3) {
                 persons
-            }else if(text.length < 3){
-                lastSearched
             } else {
-                lastSearched = repo.searchUsersOnServer(text)
-                lastSearched
+                userRepo.searchUsersOnServer(text)
             }
         }
         .onEach { _isSearching.update { false } }
@@ -58,6 +55,9 @@ class UserViewModel @Inject constructor(
     )
     fun onSearchTextChange(text: String){
         _searchText.value =  text
+    }
+    fun changeAvatar(imageUri: Uri){
+        imageRepo.uploadImgAndSaveURL(imageUri, curUser.nickname)
     }
 
     suspend fun addUser(nickname: String, pass: String, work: String, callback: UserRepositoryImpl.ChildExistenceCallback){
@@ -85,5 +85,9 @@ class UserViewModel @Inject constructor(
         viewModelScope.launch {
             repoImpl.checkUser(nickname, pass, callback)
         }
+    }
+
+    fun updateCurUser(nickname: String, work: String, uri: Uri?) {
+        TODO("Not yet implemented")
     }
 }

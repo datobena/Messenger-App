@@ -1,5 +1,14 @@
 package ge.dbenadshis.messengerapp
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.ImageDecoder
+import android.net.Uri
+import android.os.Build
+import android.provider.MediaStore
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
@@ -10,6 +19,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -43,6 +53,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -53,9 +64,11 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.paint
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -63,6 +76,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
+import androidx.lifecycle.MutableLiveData
 import androidx.navigation.NavController
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -71,18 +86,67 @@ import java.util.UUID
 import kotlin.math.floor
 
 
+@Composable
+fun DrawAvatar(imageUri: MutableState<Uri?>) {
 
+    val context = LocalContext.current
+    val bitmap = remember {
+        mutableStateOf<Bitmap>(
+            BitmapFactory.decodeResource(
+                context.resources,
+                R.drawable.avatar_image_placeholder
+            )
+        )
+    }
+
+    val launcher =
+        rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+            imageUri.value = uri
+        }
+    if (imageUri.value != null) {
+        if (Build.VERSION.SDK_INT < 28) {
+            bitmap.value = MediaStore.Images
+                .Media.getBitmap(context.contentResolver, imageUri.value)
+        } else {
+            val source = ImageDecoder.createSource(context.contentResolver, imageUri.value!!)
+            bitmap.value = ImageDecoder.decodeBitmap(source)
+        }
+    }
+    val bitmapImage = bitmap.value.asImageBitmap()
+    Image(
+        bitmap = bitmapImage,
+        contentDescription = "Profile Image",
+        contentScale = ContentScale.FillBounds,
+        modifier = Modifier
+            .padding(horizontal = getScreenWidth() * 0.2f, vertical = 32.dp)
+            .aspectRatio(1f)
+            .fillMaxSize(0.6f)
+            .clickable { launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
+            .clip(CircleShape)
+    )
+
+
+}
 
 @Composable
 fun ProfilePage() {
     val navController = LocalNavController.current
+    val avatarUriMut = remember{
+        mutableStateOf(userViewModel.curUser.avatarURL.let { if (it == "") null else it.toUri() })
+    }
+    val nickname = remember{
+        mutableStateOf(userViewModel.curUser.nickname)
+    }
+    val work = remember{
+        mutableStateOf(userViewModel.curUser.work)
+    }
     Scaffold(
         bottomBar = {
             AddBottomAppBar(navController, null)
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { navController.navigate(Screen.Search.route)},
+                onClick = { navController.navigate(Screen.Search.route) },
                 elevation = FloatingActionButtonDefaults.elevation(
                     defaultElevation = 8.dp,
                     pressedElevation = 0.dp
@@ -102,20 +166,11 @@ fun ProfilePage() {
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Image(
-                painter = painterResource(R.drawable.avatar_image_placeholder),
-                contentDescription = "Profile Image",
-                modifier = Modifier
-                    .aspectRatio(1f)
-                    .padding(horizontal = getScreenWidth() * 0.2f)
-                    .fillMaxSize(0.6f)
-                    .clickable { /* Handle image click */ }
-                    .clip(CircleShape)
-            )
+            DrawAvatar(avatarUriMut)
 
             TextField(
-                value = userViewModel.curUser.nickname,
-                onValueChange = { },
+                value = nickname.value,
+                onValueChange = { newNickname -> nickname.value = newNickname },
                 colors = TextFieldDefaults.textFieldColors(
                     backgroundColor = colorResource(id = R.color.field_color),
                     focusedIndicatorColor = Color.Transparent,
@@ -132,8 +187,8 @@ fun ProfilePage() {
 
             // Profession TextField
             TextField(
-                value = userViewModel.curUser.work,
-                onValueChange = { /* Handle profession change */ },
+                value = work.value,
+                onValueChange = { newWork -> work.value = newWork },
                 colors = TextFieldDefaults.textFieldColors(
                     backgroundColor = colorResource(id = R.color.field_color),
                     focusedIndicatorColor = Color.Transparent,
@@ -149,7 +204,9 @@ fun ProfilePage() {
 
             // Update Button
             Button(
-                onClick = {},
+                onClick = {
+                    userViewModel.updateCurUser(nickname.value, work.value, avatarUriMut.value)
+                },
                 modifier = Modifier
                     .padding(16.dp)
                     .fillMaxWidth(0.35f),
@@ -164,9 +221,10 @@ fun ProfilePage() {
 
             // Sign Out Button
             OutlinedButton(
-                onClick = { sharedPreferences!!.edit().clear().apply()
-                            navController.navigate(Screen.Start.route)
-                          },
+                onClick = {
+                    sharedPreferences!!.edit().clear().apply()
+                    navController.navigate(Screen.Start.route)
+                },
                 modifier = Modifier.padding(bottom = 16.dp),
                 colors = ButtonDefaults.buttonColors(
                     backgroundColor = Color.White,
@@ -339,7 +397,7 @@ fun AddBottomAppBar(
         BottomNavigationItem(
             selected = false,
             enabled = false,
-            onClick = { navController.navigate(Screen.Search.route)},
+            onClick = { navController.navigate(Screen.Search.route) },
             icon = { Icon(Icons.Default.Add, contentDescription = "Transparent") }
         )
         BottomNavigationItem(
