@@ -25,7 +25,9 @@ class UserRepositoryImpl @Inject constructor(
             }
 
             override fun onChildDoesNotExist() {
-                firebaseApp.child(nickname).setValue(User(nickname, PasswordUtils.hashPassword(pass), work))
+                val key = firebaseApp.push().key
+                firebaseApp.child(key!!).setValue(User(nickname, PasswordUtils.hashPassword(pass), work))
+                firebaseApp.child("nicknames").child(nickname).setValue(key)
                 callback.onChildDoesNotExist()
             }
         })
@@ -34,7 +36,9 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun checkUser(nickname: String, pass: String, callback: UserExistenceCallback) {
         nicknameExists(nickname, object : ChildExistenceCallback {
             override fun onChildExists(dataSnapshot: DataSnapshot) {
-                val user = dataSnapshot.child(nickname).getValue<User>()
+                val key = dataSnapshot.child("nicknames").child(nickname).getValue<String>()
+                println(key)
+                val user = dataSnapshot.child(key!!).getValue<User>()
                 if (user != null && PasswordUtils.verifyPassword(pass, user.passHash)) {
                     callback.onUserExists(user)
                 } else {
@@ -52,7 +56,10 @@ class UserRepositoryImpl @Inject constructor(
         firebaseApp.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val userList = snapshot.children.mapNotNull { childSnapshot ->
-                    childSnapshot.getValue(User::class.java)
+                    if(childSnapshot.key != "nicknames")
+                        childSnapshot.getValue(User::class.java)
+                    else
+                       null
                 }
                 callback.onUserExists(userList)
             }
@@ -64,24 +71,25 @@ class UserRepositoryImpl @Inject constructor(
     }
     suspend fun searchUsersOnServer(query: String): List<User> = withContext(Dispatchers.IO) {
         val snapshot = firebaseApp
+            .child("nicknames")
             .orderByKey()
             .startAt(query)
             .endAt(query + "\uf8ff")
             .get()
             .await()
-        val filteredUsers = mutableListOf<User>()
-        for (childSnapshot in snapshot.children) {
-            val user = childSnapshot.getValue(User::class.java)
-            user?.let { filteredUsers.add(it) }
+        val filteredUsers = snapshot.children.mapNotNull { childSnapshot ->
+            val key = childSnapshot.getValue<String>()
+            println(key)
+            firebaseApp.child(key!!).get().await().getValue<User>()
         }
         println(filteredUsers.toString())
         return@withContext filteredUsers
     }
 
-    fun nicknameExists(nickname: String, callback: ChildExistenceCallback){
+    private fun nicknameExists(nickname: String, callback: ChildExistenceCallback){
         firebaseApp.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(dataSnapshot: DataSnapshot) {
-                if (dataSnapshot.hasChild(nickname)) {
+                if (dataSnapshot.child("nicknames").hasChild(nickname)) {
                     callback.onChildExists(dataSnapshot)
                 } else {
                     callback.onChildDoesNotExist()

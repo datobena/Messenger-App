@@ -22,5 +22,11 @@ abstract class RepositoryModule {
         charRepositoryImpl: ChatRepositoryImpl
     ): ChatRepository
 
+    @Binds
+    @Singleton
+    abstract fun bindImagesRepository(
+        imageRepositoryImpl: ImageRepositoryImpl
+    ): ImageRepository
+
 
 }

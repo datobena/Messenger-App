@@ -1,5 +1,6 @@
 package ge.dbenadshis.messengerapp.database
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -20,11 +21,12 @@ import javax.inject.Inject
 @OptIn(FlowPreview::class)
 @HiltViewModel
 class UserViewModel @Inject constructor(
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    imageRepository: ImageRepository
 ) : ViewModel(){
 
-    val repo = userRepository as UserRepositoryImpl
-
+    val userRepo = userRepository as UserRepositoryImpl
+    private val imageRepo = imageRepository as ImageRepositoryImpl
     var curUser = User()
 
 
@@ -42,7 +44,7 @@ class UserViewModel @Inject constructor(
             if (text.length < 3) {
                 persons
             } else {
-                repo.searchUsersOnServer(text)
+                userRepo.searchUsersOnServer(text)
             }
         }
         .onEach { _isSearching.update { false } }
@@ -53,6 +55,9 @@ class UserViewModel @Inject constructor(
     )
     fun onSearchTextChange(text: String){
         _searchText.value =  text
+    }
+    fun changeAvatar(imageUri: Uri){
+        imageRepo.uploadImgAndSaveURL(imageUri, curUser.nickname)
     }
 
     suspend fun addUser(nickname: String, pass: String, work: String, callback: UserRepositoryImpl.ChildExistenceCallback){
@@ -80,5 +85,9 @@ class UserViewModel @Inject constructor(
         viewModelScope.launch {
             repoImpl.checkUser(nickname, pass, callback)
         }
+    }
+
+    fun updateCurUser(nickname: String, work: String, uri: Uri?) {
+        TODO("Not yet implemented")
     }
 }
