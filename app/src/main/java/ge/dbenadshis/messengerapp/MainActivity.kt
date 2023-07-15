@@ -386,9 +386,15 @@ fun LogInPage(){
     }
 }
 
-private fun saveUserAndNavigate(navController: NavHostController, nickname: String, pass: String, work: String){
+private fun saveUserAndNavigate(
+    navController: NavHostController,
+    nickname: String,
+    pass: String,
+    work: String,
+    avatarURL: String = ""
+){
     sharedPreferences!!.edit().putString("nickname", nickname).putString("pass", pass).apply()
-    userViewModel.curUser = User(nickname, pass, work)
+    userViewModel.curUser = User(nickname, pass, work, avatarURL)
     chatViewModel.setListeners(nickname)
     navController.navigate(Screen.Home.route)
 }
@@ -397,7 +403,7 @@ fun signInAccount(navController: NavHostController, nickname: String, pass: Stri
     CoroutineScope(Dispatchers.Default).launch {
         userViewModel.checkUser(nickname, pass, object : UserRepositoryImpl.UserExistenceCallback {
             override fun onUserExists(user: User) {
-                saveUserAndNavigate(navController, nickname, pass, user.work)
+                saveUserAndNavigate(navController, nickname, pass, user.work, user.avatarURL)
             }
 
             override fun onUserDoesNotExist() {
