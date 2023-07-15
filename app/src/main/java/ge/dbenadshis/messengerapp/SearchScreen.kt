@@ -46,15 +46,15 @@ fun SearchScreen() {
     userViewModel.setAllUsers()
     Scaffold(
         topBar = { SearchBar() }
-    ){
+    ) {
         val isSearching by userViewModel.isSearching.collectAsState()
         val profiles by userViewModel.persons.collectAsState()
-        if(isSearching){
+        if (isSearching) {
             Loader()
-        }else {
+        } else {
             LazyColumn(modifier = Modifier.padding(it)) {
                 items(profiles) { profile ->
-                    if(profile.nickname != userViewModel.curUser.nickname)
+                    if (profile.nickname != userViewModel.curUser.nickname)
                         ProfileItem(profile)
                 }
             }
@@ -67,43 +67,43 @@ fun ProfileItem(user: User) {
     var isChat by remember {
         mutableStateOf(false)
     }
-        Row(
+    Row(
+        modifier = Modifier
+            .padding(16.dp)
+            .fillMaxWidth()
+            .clickable {
+                isChat = true
+            },
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.avatar_image_placeholder), // TODO: change
+            contentDescription = "Profile Photo",
             modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth()
-                .clickable {
-                    isChat = true
-                },
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (isChat) {
-                chatViewModel.getNickname(user.nickname)
-                chatViewModel.currentChatFriend = user
-                LocalNavController.current.navigate(Screen.Chat.route)
-            } else {
-                Image(
-                    painter = painterResource(id = R.drawable.avatar_image_placeholder), // TODO: change
-                    contentDescription = "Profile Photo",
-                    modifier = Modifier
-                        .size(60.dp)
-                        .clip(CircleShape)
-                )
-                Spacer(modifier = Modifier.width(16.dp))
-                Column {
-                    Text(
-                        text = user.nickname,
-                        fontSize = 18.sp
-                    )
-                    Text(
-                        text = user.work,
-                        fontSize = 14.sp, color = Color.Gray
-                    )
-                }
-            }
+                .size(60.dp)
+                .clip(CircleShape)
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        Column {
+            Text(
+                text = user.nickname,
+                fontSize = 18.sp
+            )
+            Text(
+                text = user.work,
+                fontSize = 14.sp, color = Color.Gray
+            )
         }
+        if (isChat) {
+            chatViewModel.getNickname(user.nickname)
+            chatViewModel.currentChatFriend = user
+            LocalNavController.current.navigate(Screen.Chat.route)
+        }
+    }
 }
+
 @Composable
-fun SearchBar(){
+fun SearchBar() {
     val searchText by userViewModel.searchText.collectAsState()
     Row(
         modifier = Modifier
