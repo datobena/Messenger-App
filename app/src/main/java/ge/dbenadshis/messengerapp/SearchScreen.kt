@@ -54,7 +54,8 @@ fun SearchScreen() {
         }else {
             LazyColumn(modifier = Modifier.padding(it)) {
                 items(profiles) { profile ->
-                    ProfileItem(profile)
+                    if(profile.nickname != userViewModel.curUser.nickname)
+                        ProfileItem(profile)
                 }
             }
         }
@@ -66,39 +67,40 @@ fun ProfileItem(user: User) {
     var isChat by remember {
         mutableStateOf(false)
     }
-    Row(
-        modifier = Modifier
-            .padding(16.dp)
-            .fillMaxWidth()
-            .clickable {
-                isChat = true
-            },
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        if (isChat){
-            chatViewModel.currentChatFriend = user
-            LocalNavController.current.navigate(Screen.Chat.route)
-        }else {
-            Image(
-                painter = painterResource(id = R.drawable.avatar_image_placeholder), // TODO: change
-                contentDescription = "Profile Photo",
-                modifier = Modifier
-                    .size(60.dp)
-                    .clip(CircleShape)
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            Column {
-                Text(
-                    text = user.nickname,
-                    fontSize = 18.sp
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth()
+                .clickable {
+                    isChat = true
+                },
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (isChat) {
+                chatViewModel.getNickname(user.nickname)
+                chatViewModel.currentChatFriend = user
+                LocalNavController.current.navigate(Screen.Chat.route)
+            } else {
+                Image(
+                    painter = painterResource(id = R.drawable.avatar_image_placeholder), // TODO: change
+                    contentDescription = "Profile Photo",
+                    modifier = Modifier
+                        .size(60.dp)
+                        .clip(CircleShape)
                 )
-                Text(
-                    text = user.work,
-                    fontSize = 14.sp, color = Color.Gray
-                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Column {
+                    Text(
+                        text = user.nickname,
+                        fontSize = 18.sp
+                    )
+                    Text(
+                        text = user.work,
+                        fontSize = 14.sp, color = Color.Gray
+                    )
+                }
             }
         }
-    }
 }
 @Composable
 fun SearchBar(){

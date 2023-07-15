@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -77,7 +76,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
-import androidx.lifecycle.MutableLiveData
 import androidx.navigation.NavController
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -223,6 +221,8 @@ fun ProfilePage() {
             OutlinedButton(
                 onClick = {
                     sharedPreferences!!.edit().clear().apply()
+                    chatViewModel.clearNickname()
+                    chatViewModel.reset()
                     navController.navigate(Screen.Start.route)
                 },
                 modifier = Modifier.padding(bottom = 16.dp),

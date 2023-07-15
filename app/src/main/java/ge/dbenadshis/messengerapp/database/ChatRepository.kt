@@ -6,6 +6,6 @@ interface ChatRepository {
 
     suspend fun addMessage(message: Message)
 
-    suspend fun generateMessages(sender:String, receiver: String)
+    suspend fun generateMessages(senderKey:String)
 
 }

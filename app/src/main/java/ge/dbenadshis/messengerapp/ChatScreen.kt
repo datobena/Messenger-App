@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
@@ -53,9 +54,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import ge.dbenadshis.messengerapp.Loader
 import ge.dbenadshis.messengerapp.R
 import ge.dbenadshis.messengerapp.Utils.Companion.formatDate
-import ge.dbenadshis.messengerapp.database.ChatViewModel
+import ge.dbenadshis.messengerapp.chatViewModel
 import ge.dbenadshis.messengerapp.model.Message
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -68,108 +70,121 @@ import me.onebone.toolbar.rememberCollapsingToolbarScaffoldState
 
 @SuppressLint("UnusedMaterialScaffoldPaddingParameter")
 @Composable
-fun ChatScreen(currentUser: String, friend: String, chatViewModel: ChatViewModel) {
-    ChatScreenCreate(currentUser, friend, chatViewModel)
+fun ChatScreen(currentUser: String, friend: String) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        ChatScreenCreate(currentUser, friend)
+    }
 }
 @Composable
-fun ChatScreenCreate(currentUser: String, friend: String, chatViewModel: ChatViewModel) {
+fun ChatScreenCreate(currentUser: String, friend: String) {
     val state = rememberCollapsingToolbarScaffoldState()
-    var enabled by remember { mutableStateOf(true) }
+    val enabled by remember { mutableStateOf(true) }
     val messages by chatViewModel.allMessages.observeAsState(listOf())
-
-    Box {
-        CollapsingToolbarScaffold(
-            modifier = Modifier.fillMaxSize(),
-            state = state,
-            scrollStrategy = ScrollStrategy.ExitUntilCollapsed,
-            toolbarModifier = Modifier.background(MaterialTheme.colors.primary),
-            enabled = enabled,
-            toolbar = {
-                val textSize = (20 + (30 - 18) * state.toolbarState.progress).sp
-                val mn = (60 * state.toolbarState.progress).dp
-                Box(
-                    modifier = Modifier
-                        .background(colorResource(id = R.color.button_color))
-                        .fillMaxWidth()
-                        .height(150.dp)
-                        .pin()
-                )
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                ) {
-                    Icon(
-                        Icons.Default.ArrowBack,
-                        contentDescription = "back",
+    val currentFriend by chatViewModel.currentFriend.collectAsState()
+    if(currentFriend == ""){
+        Loader()
+    }else {
+        Box {
+            CollapsingToolbarScaffold(
+                modifier = Modifier.fillMaxSize(),
+                state = state,
+                scrollStrategy = ScrollStrategy.ExitUntilCollapsed,
+                toolbarModifier = Modifier.background(MaterialTheme.colors.primary),
+                enabled = enabled,
+                toolbar = {
+                    val textSize = (20 + (30 - 18) * state.toolbarState.progress).sp
+                    val mn = (60 * state.toolbarState.progress).dp
+                    Box(
                         modifier = Modifier
-                            .padding(
-                                start = 8.dp,
-                                top = 24.dp - (12 * (1 - state.toolbarState.progress)).dp
-                            )
-                            .width(45.dp)
-                            .height(45.dp)
-                            .align(Alignment.TopStart)
-                            .clickable {
-                                Log.d("Search page", "handle returning to home")
-                            },
-                        tint = Color.White,
+                            .background(colorResource(id = R.color.button_color))
+                            .fillMaxWidth()
+                            .height(150.dp)
+                            .pin()
                     )
-                    Column(
+                    Box(
                         modifier = Modifier
-                            .padding(
-                                start = 16.dp + (48 * (1 - state.toolbarState.progress)).dp,
-                                top = mn,
-                                bottom = 8.dp
-                            )
-                            .align(Alignment.CenterStart)
+                            .fillMaxWidth()
                     ) {
-                        Text(
-                            text = friend,
-                            color = Color.White,
-                            fontSize = textSize
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "back",
+                            modifier = Modifier
+                                .padding(
+                                    start = 8.dp,
+                                    top = 24.dp - (12 * (1 - state.toolbarState.progress)).dp
+                                )
+                                .width(45.dp)
+                                .height(45.dp)
+                                .align(Alignment.TopStart)
+                                .clickable {
+                                    Log.d("Search page", "handle returning to home")
+                                },
+                            tint = Color.White,
                         )
-                        Text(
-                            text = chatViewModel.currentChatFriend.work,
-                            color = Color.White,
-                            fontSize = textSize * (0.7)
+                        Column(
+                            modifier = Modifier
+                                .padding(
+                                    start = 16.dp + (48 * (1 - state.toolbarState.progress)).dp,
+                                    top = mn,
+                                    bottom = 8.dp
+                                )
+                                .align(Alignment.CenterStart)
+                        ) {
+                            Text(
+                                text = friend,
+                                color = Color.White,
+                                fontSize = textSize
+                            )
+                            Text(
+                                text = chatViewModel.currentChatFriend.work,
+                                color = Color.White,
+                                fontSize = textSize * (0.7)
+                            )
+                        }
+                        Image(
+                            painter = painterResource(id = R.drawable.avatar_image_placeholder),
+                            contentDescription = "Logo",
+                            modifier = Modifier
+                                .padding(end = 16.dp, top = 8.dp + mn, bottom = 8.dp)
+                                .size(60.dp)
+                                .align(Alignment.BottomEnd)
+                                .clip(CircleShape)
+                                .border(2.dp, Color.Cyan, CircleShape)
                         )
                     }
-                    Image(
-                        painter = painterResource(id = R.drawable.avatar_image_placeholder),
-                        contentDescription = "Logo",
-                        modifier = Modifier
-                            .padding(end = 16.dp, top = 8.dp + mn, bottom = 8.dp)
-                            .size(60.dp)
-                            .align(Alignment.BottomEnd)
-                            .clip(CircleShape)
-                            .border(2.dp, Color.Cyan, CircleShape)
-                    )
                 }
-            }
-        ) {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = MESSAGE_TEXT_FIELD)
             ) {
-                items(
-                   messages
-                ) { message ->
-                    if(chatViewModel.currentChatFriend.nickname == message.receiver ||
-                        chatViewModel.currentChatFriend.nickname == message.sender) {
-                        ChatMessageItem(message)
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = MESSAGE_TEXT_FIELD)
+                ) {
+                    items(
+                        messages
+                    ) { message ->
+                        if(chatViewModel.getCurrentFriend() == message.receiver ||
+                                chatViewModel.getCurrentFriend() == message.sender) {
+                            ChatMessageItem(message)
+                        }
                     }
                 }
-            }
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd),
-            ) {
-                ChatBottom(onclick = { txt ->
-                    CoroutineScope(Dispatchers.Default).launch {
-                        chatViewModel.addMessage(Message(currentUser,friend, txt.content, txt.date))
-                    }
-                })
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd),
+                ) {
+                    ChatBottom(onclick = { txt ->
+                        CoroutineScope(Dispatchers.Default).launch {
+                            chatViewModel.addMessage(
+                                Message(
+                                    currentUser,
+                                    friend,
+                                    txt.content,
+                                    txt.date
+                                )
+                            )
+                        }
+                    })
+                }
             }
         }
     }

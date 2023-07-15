@@ -111,7 +111,7 @@ fun SetupNavGraph() {
                 SearchScreen()
             }
             composable(Screen.Chat.route) {
-                ChatScreen(userViewModel.curUser.nickname, chatViewModel.currentChatFriend.nickname , chatViewModel)
+                ChatScreen(userViewModel.curUser.nickname, chatViewModel.currentChatFriend.nickname)
             }
         }
     }
@@ -131,7 +131,6 @@ class MainActivity : ComponentActivity() {
         userViewModel = ViewModelProvider(this)[UserViewModel::class.java]
         chatViewModel = ViewModelProvider(this)[ChatViewModel::class.java]
 
-
         sharedPreferences =
             applicationContext.getSharedPreferences("message-app", Context.MODE_PRIVATE)
         setContent {
@@ -141,9 +140,7 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colors.background,
                 ) {
                     SetupNavGraph()
-//                    ChatScreen("dato", "Dimitri", chatViewModel)
                 }
-
             }
         }
     }
@@ -289,6 +286,7 @@ fun StartScreen() {
                     override fun onUserExists(user: User) {
                         sharedPreferences!!.edit().putString("nickname", user.nickname).putString("pass", pass).apply()
                         userViewModel.curUser = user
+                        chatViewModel.setListeners(user.nickname)
                         navController.navigate(Screen.Home.route)
                     }
                     override fun onUserDoesNotExist() {
@@ -389,6 +387,7 @@ fun LogInPage(){
 private fun saveUserAndNavigate(navController: NavHostController, nickname: String, pass: String, work: String){
     sharedPreferences!!.edit().putString("nickname", nickname).putString("pass", pass).apply()
     userViewModel.curUser = User(nickname, pass, work)
+    chatViewModel.setListeners(nickname)
     navController.navigate(Screen.Home.route)
 }
 
@@ -396,6 +395,7 @@ fun signInAccount(navController: NavHostController, nickname: String, pass: Stri
     CoroutineScope(Dispatchers.Default).launch {
         userViewModel.checkUser(nickname, pass, object : UserRepositoryImpl.UserExistenceCallback {
             override fun onUserExists(user: User) {
+                chatViewModel.getNickname(user.nickname)
                 saveUserAndNavigate(navController, nickname, pass, user.work)
             }
 
