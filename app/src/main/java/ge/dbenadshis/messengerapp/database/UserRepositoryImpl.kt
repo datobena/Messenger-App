@@ -1,5 +1,6 @@
 package ge.dbenadshis.messengerapp.database
 
+import android.util.Log
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
@@ -64,8 +65,8 @@ class UserRepositoryImpl @Inject constructor(
                 callback.onUserExists(userList)
             }
             override fun onCancelled(error: DatabaseError) {
-                // Handle the error here
-                callback.onUserDoesNotExist()
+                Log.d("getAllUsersErr", "Request was cancelled! ${error.message}")
+
             }
         })
     }
@@ -86,7 +87,7 @@ class UserRepositoryImpl @Inject constructor(
         return@withContext filteredUsers
     }
 
-    private fun nicknameExists(nickname: String, callback: ChildExistenceCallback){
+    fun nicknameExists(nickname: String, callback: ChildExistenceCallback){
         firebaseApp.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(dataSnapshot: DataSnapshot) {
                 if (dataSnapshot.child("nicknames").hasChild(nickname)) {
@@ -97,7 +98,8 @@ class UserRepositoryImpl @Inject constructor(
             }
 
             override fun onCancelled(databaseError: DatabaseError) {
-                // Handle potential error
+                Log.d("nicknameExistsErr", "Request was cancelled! ${databaseError.message}")
+
             }
         })
     }

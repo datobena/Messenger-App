@@ -52,6 +52,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -77,6 +78,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import androidx.navigation.NavController
+import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -85,50 +87,82 @@ import kotlin.math.floor
 
 
 @Composable
-fun DrawAvatar(imageUri: MutableState<Uri?>) {
+fun DrawAvatar(imageUri: MutableState<Uri?>, bitmap: MutableState<Bitmap?>) {
 
     val context = LocalContext.current
-    val bitmap = remember {
-        mutableStateOf<Bitmap>(
-            BitmapFactory.decodeResource(
-                context.resources,
-                R.drawable.avatar_image_placeholder
-            )
-        )
-    }
+    val isLoading = remember { mutableStateOf(false) }
 
     val launcher =
         rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
             imageUri.value = uri
         }
-    if (imageUri.value != null) {
-        if (Build.VERSION.SDK_INT < 28) {
-            bitmap.value = MediaStore.Images
-                .Media.getBitmap(context.contentResolver, imageUri.value)
-        } else {
-            val source = ImageDecoder.createSource(context.contentResolver, imageUri.value!!)
-            bitmap.value = ImageDecoder.decodeBitmap(source)
+
+    LaunchedEffect(imageUri.value) {
+        if(bitmap.value == null || imageUri.value.toString() != userViewModel.curUser.avatarURL) {
+            if (imageUri.value != null) {
+                if (imageUri.value.toString().startsWith("http")) {
+                    isLoading.value = true
+                    // Download the image from Firebase Storage
+                    val storageRef =
+                        userViewModel.imageRepo.imagesReference.storage.getReferenceFromUrl(imageUri.value.toString())
+                    val byteArray = storageRef.getBytes(10 * 1024 * 1024).await()
+                    bitmap.value = BitmapFactory.decodeByteArray(byteArray, 0, byteArray.size)
+                    isLoading.value = false
+                } else if (Build.VERSION.SDK_INT < 28) {
+                    bitmap.value =
+                        MediaStore.Images.Media.getBitmap(context.contentResolver, imageUri.value)
+                } else {
+                    val source =
+                        ImageDecoder.createSource(context.contentResolver, imageUri.value!!)
+                    bitmap.value = ImageDecoder.decodeBitmap(source)
+                }
+            } else {
+                bitmap.value = BitmapFactory.decodeResource(
+                    context.resources,
+                    R.drawable.avatar_image_placeholder
+                )
+            }
         }
     }
-    val bitmapImage = bitmap.value.asImageBitmap()
-    Image(
-        bitmap = bitmapImage,
-        contentDescription = "Profile Image",
-        contentScale = ContentScale.FillBounds,
-        modifier = Modifier
-            .padding(horizontal = getScreenWidth() * 0.2f, vertical = 32.dp)
-            .aspectRatio(1f)
-            .fillMaxSize(0.6f)
-            .clickable { launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
-            .clip(CircleShape)
-    )
 
-
+    if (isLoading.value) {
+        Loader()
+    } else {
+        if (bitmap.value != null) {
+            val bitmapImage = bitmap.value!!.asImageBitmap()
+            Image(
+                bitmap = bitmapImage,
+                contentDescription = "Profile Image",
+                contentScale = ContentScale.FillBounds,
+                modifier = Modifier
+                    .padding(horizontal = getScreenWidth() * 0.2f, vertical = 32.dp)
+                    .aspectRatio(1f)
+                    .fillMaxSize(0.6f)
+                    .clickable { launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
+                    .clip(CircleShape)
+            )
+        } else {
+            // Placeholder or error image when bitmap is null
+            Image(
+                painter = painterResource(R.drawable.avatar_image_placeholder),
+                contentDescription = "Profile Image",
+                contentScale = ContentScale.FillBounds,
+                modifier = Modifier
+                    .padding(horizontal = getScreenWidth() * 0.2f, vertical = 32.dp)
+                    .aspectRatio(1f)
+                    .fillMaxSize(0.6f)
+                    .clickable { launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
+                    .clip(CircleShape)
+            )
+        }
+    }
 }
+
 
 @Composable
 fun ProfilePage() {
     val navController = LocalNavController.current
+    val isLoading = remember { mutableStateOf(false) }
     val avatarUriMut = remember{
         mutableStateOf(userViewModel.curUser.avatarURL.let { if (it == "") null else it.toUri() })
     }
@@ -138,110 +172,114 @@ fun ProfilePage() {
     val work = remember{
         mutableStateOf(userViewModel.curUser.work)
     }
-    Scaffold(
-        bottomBar = {
-            AddBottomAppBar(navController, null)
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { navController.navigate(Screen.Search.route) },
-                elevation = FloatingActionButtonDefaults.elevation(
-                    defaultElevation = 8.dp,
-                    pressedElevation = 0.dp
-                ),
-                backgroundColor = colorResource(id = R.color.background)
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White)
-            }
-        },
-        isFloatingActionButtonDocked = true,
-        floatingActionButtonPosition = FabPosition.Center,
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(it),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+    val bitmap = remember { mutableStateOf<Bitmap?>(null) }
+    if(isLoading.value)
+        Loader()
+    else {
+        avatarUriMut.value = userViewModel.curUser.avatarURL.let { if (it == "") null else it.toUri() }
+        Scaffold(
+            bottomBar = {
+                AddBottomAppBar(navController, null)
+            },
+            floatingActionButton = {
+                FloatingActionButton(
+                    onClick = { navController.navigate(Screen.Search.route) },
+                    elevation = FloatingActionButtonDefaults.elevation(
+                        defaultElevation = 8.dp,
+                        pressedElevation = 0.dp
+                    ),
+                    backgroundColor = colorResource(id = R.color.background)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White)
+                }
+            },
+            isFloatingActionButtonDocked = true,
+            floatingActionButtonPosition = FabPosition.Center,
         ) {
-            DrawAvatar(avatarUriMut)
-
-            TextField(
-                value = nickname.value,
-                onValueChange = { newNickname -> nickname.value = newNickname },
-                colors = TextFieldDefaults.textFieldColors(
-                    backgroundColor = colorResource(id = R.color.field_color),
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent
-                ),
-                textStyle = TextStyle(textAlign = TextAlign.Center, fontSize = 20.sp),
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .padding(bottom = 16.dp)
-                    .background(Color.White)
-                    .clip(CircleShape),
-            )
-
-            // Profession TextField
-            TextField(
-                value = work.value,
-                onValueChange = { newWork -> work.value = newWork },
-                colors = TextFieldDefaults.textFieldColors(
-                    backgroundColor = colorResource(id = R.color.field_color),
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent
-                ),
-                textStyle = TextStyle(textAlign = TextAlign.Center, fontSize = 20.sp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .padding(bottom = 16.dp)
-                    .clip(CircleShape),
-            )
-
-            // Update Button
-            Button(
-                onClick = {
-                    userViewModel.updateCurUser(nickname.value, work.value, avatarUriMut.value)
-                },
-                modifier = Modifier
-                    .padding(16.dp)
-                    .fillMaxWidth(0.35f),
-                colors = ButtonDefaults.buttonColors(
-                    backgroundColor = colorResource(id = R.color.background),
-                    disabledBackgroundColor = Color.LightGray,
-                    disabledContentColor = Color.Gray,
-                ),
+                    .fillMaxSize()
+                    .padding(it),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("Update", color = Color.White, fontSize = 20.sp)
-            }
+                DrawAvatar(avatarUriMut, bitmap)
 
-            // Sign Out Button
-            OutlinedButton(
-                onClick = {
-                    sharedPreferences!!.edit().clear().apply()
-                    chatViewModel.clearNickname()
-                    chatViewModel.reset()
-                    navController.navigate(Screen.Start.route)
-                },
-                modifier = Modifier.padding(bottom = 16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    backgroundColor = Color.White,
-                    contentColor = Color.DarkGray,
-                    disabledBackgroundColor = Color.LightGray,
-                    disabledContentColor = Color.Gray,
-                ),
-                border = BorderStroke(1.5.dp, Color.Gray),
-                elevation = ButtonDefaults.elevation(0.dp)
-            ) {
-                Text(
-                    "Sign Out",
-                    fontSize = 20.sp,
+                TextField(
+                    value = nickname.value,
+                    onValueChange = { newNickname -> nickname.value = newNickname },
+                    colors = TextFieldDefaults.textFieldColors(
+                        backgroundColor = colorResource(id = R.color.field_color),
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent
+                    ),
+                    textStyle = TextStyle(textAlign = TextAlign.Center, fontSize = 20.sp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = 16.dp)
+                        .background(Color.White)
+                        .clip(CircleShape),
                 )
-            }
-        }
 
+                // Profession TextField
+                TextField(
+                    value = work.value,
+                    onValueChange = { newWork -> work.value = newWork },
+                    colors = TextFieldDefaults.textFieldColors(
+                        backgroundColor = colorResource(id = R.color.field_color),
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent
+                    ),
+                    textStyle = TextStyle(textAlign = TextAlign.Center, fontSize = 20.sp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = 16.dp)
+                        .clip(CircleShape),
+                )
+
+                // Update Button
+                Button(
+                    onClick = {
+                        userViewModel.updateCurUser(nickname.value, work.value, avatarUriMut.value, isLoading)
+                    },
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxWidth(0.35f),
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = colorResource(id = R.color.background),
+                        disabledBackgroundColor = Color.LightGray,
+                        disabledContentColor = Color.Gray,
+                    ),
+                ) {
+                    Text("Update", color = Color.White, fontSize = 20.sp)
+                }
+
+                // Sign Out Button
+                OutlinedButton(
+                    onClick = {
+                        sharedPreferences!!.edit().clear().apply()
+                        navController.navigate(Screen.Start.route)
+                    },
+                    modifier = Modifier.padding(bottom = 16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = Color.White,
+                        contentColor = Color.DarkGray,
+                        disabledBackgroundColor = Color.LightGray,
+                        disabledContentColor = Color.Gray,
+                    ),
+                    border = BorderStroke(1.5.dp, Color.Gray),
+                    elevation = ButtonDefaults.elevation(0.dp)
+                ) {
+                    Text(
+                        "Sign Out",
+                        fontSize = 20.sp,
+                    )
+                }
+            }
+
+        }
     }
 
 }

@@ -1,10 +1,17 @@
 package ge.dbenadshis.messengerapp.database
 
 import android.net.Uri
+import android.util.Log
+import androidx.compose.runtime.MutableState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.ValueEventListener
 import dagger.hilt.android.lifecycle.HiltViewModel
+import ge.dbenadshis.messengerapp.database.UserRepositoryImpl.ChildExistenceCallback
 import ge.dbenadshis.messengerapp.model.User
+import ge.dbenadshis.messengerapp.sharedPreferences
 
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,7 +33,7 @@ class UserViewModel @Inject constructor(
 ) : ViewModel(){
 
     val userRepo = userRepository as UserRepositoryImpl
-    private val imageRepo = imageRepository as ImageRepositoryImpl
+    val imageRepo = imageRepository as ImageRepositoryImpl
     var curUser = User()
 
 
@@ -56,11 +63,8 @@ class UserViewModel @Inject constructor(
     fun onSearchTextChange(text: String){
         _searchText.value =  text
     }
-    fun changeAvatar(imageUri: Uri){
-        imageRepo.uploadImgAndSaveURL(imageUri, curUser.nickname)
-    }
 
-    suspend fun addUser(nickname: String, pass: String, work: String, callback: UserRepositoryImpl.ChildExistenceCallback){
+    suspend fun addUser(nickname: String, pass: String, work: String, callback: ChildExistenceCallback){
         val repoImpl = userRepository as UserRepositoryImpl
         repoImpl.addUser(nickname, pass, work, callback)
     }
@@ -87,7 +91,45 @@ class UserViewModel @Inject constructor(
         }
     }
 
-    fun updateCurUser(nickname: String, work: String, uri: Uri?) {
-        TODO("Not yet implemented")
+    fun updateCurUser(nickname: String, work: String, uri: Uri?, isLoading: MutableState<Boolean>) {
+        if(nickname == curUser.nickname && work == curUser.work && uri.toString() == curUser.avatarURL)
+            return
+        isLoading.value = true
+        val repoImpl = userRepository as UserRepositoryImpl
+        val lastNickname = curUser.nickname
+        repoImpl.nicknameExists(lastNickname, object : ChildExistenceCallback{
+            override fun onChildExists(dataSnapshot: DataSnapshot) {
+                val key = dataSnapshot.child("nicknames").child(lastNickname).getValue(String::class.java)
+                val userRef = dataSnapshot.child(key!!).ref
+                val nicknamesRef = dataSnapshot.child("nicknames").ref
+                nicknamesRef.child(lastNickname).removeValue()
+                nicknamesRef.ref.child(nickname).setValue(key)
+                userRef.child("nickname").setValue(nickname)
+                userRef.child("work").setValue(work)
+                if(uri != null && uri.toString() != curUser.avatarURL)
+                    imageRepo.uploadImgAndSaveURL(uri, key, isLoading)
+                else
+                    isLoading.value = false
+                sharedPreferences!!.edit().putString("nickname", nickname).apply()
+
+                userRef.addListenerForSingleValueEvent(object : ValueEventListener {
+                    override fun onDataChange(dataSnapshot: DataSnapshot) {
+                        val updatedUser = dataSnapshot.getValue(User::class.java)
+                        curUser = updatedUser!!
+
+                    }
+
+                    override fun onCancelled(databaseError: DatabaseError) {
+                        Log.d("updateUserErr", "Request to database has been canceled! ${databaseError.message}")
+                    }
+                })
+
+            }
+
+            override fun onChildDoesNotExist() {
+                Log.d("updateUserErr", "Could not find user!")
+            }
+
+        })
     }
 }
