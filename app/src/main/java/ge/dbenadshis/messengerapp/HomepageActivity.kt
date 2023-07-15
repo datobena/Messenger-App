@@ -260,6 +260,8 @@ fun ProfilePage() {
                 OutlinedButton(
                     onClick = {
                         sharedPreferences!!.edit().clear().apply()
+                        chatViewModel.reset()
+                        chatViewModel.clearNickname()
                         navController.navigate(Screen.Start.route)
                     },
                     modifier = Modifier.padding(bottom = 16.dp),

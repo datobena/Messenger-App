@@ -162,8 +162,8 @@ fun ChatScreenCreate(currentUser: String, friend: String) {
                     items(
                         messages
                     ) { message ->
-                        if(chatViewModel.getCurrentFriend() == message.receiver ||
-                                chatViewModel.getCurrentFriend() == message.sender) {
+                        if((chatViewModel.getCurrentFriend() == message.receiver && message.isSentByCurrentUser) ||
+                            (chatViewModel.getCurrentFriend() == message.sender && !message.isSentByCurrentUser)   ) {
                             ChatMessageItem(message)
                         }
                     }
