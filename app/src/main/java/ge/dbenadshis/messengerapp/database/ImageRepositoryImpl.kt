@@ -8,6 +8,7 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.storage.StorageReference
+import ge.dbenadshis.messengerapp.TransactionState
 import ge.dbenadshis.messengerapp.model.User
 import ge.dbenadshis.messengerapp.userViewModel
 import java.util.UUID
@@ -22,7 +23,7 @@ class ImageRepositoryImpl @Inject constructor(
     override fun uploadImgAndSaveURL(
         imageUri: Uri,
         userId: String,
-        isLoading: MutableState<Boolean>
+        result: MutableState<TransactionState>
     ) {
         val userRef = usersReference.child(userId)
         userRef.addListenerForSingleValueEvent(object : ValueEventListener {
@@ -32,12 +33,12 @@ class ImageRepositoryImpl @Inject constructor(
                 if (currentUser != null && currentUser.avatarURL.isNotEmpty()) {
                     val oldImageRef = imagesReference.storage.getReferenceFromUrl(currentUser.avatarURL)
                     oldImageRef.delete().addOnSuccessListener {
-                        uploadNewImage(imageUri, imagesReference, userRef, isLoading)
+                        uploadNewImage(imageUri, imagesReference, userRef, result)
                     }.addOnFailureListener { exception ->
                         Log.d("uploadImageAndSaveURLErr", "Could not delete previous image from database! ${exception.message}")
                     }
                 } else {
-                    uploadNewImage(imageUri, imagesReference, userRef, isLoading)
+                    uploadNewImage(imageUri, imagesReference, userRef, result)
                 }
             }
 
@@ -50,7 +51,7 @@ class ImageRepositoryImpl @Inject constructor(
         imageUri: Uri,
         storageRef: StorageReference,
         userRef: DatabaseReference,
-        isLoading: MutableState<Boolean>
+        result: MutableState<TransactionState>
     ) {
         val imagesRef = storageRef.child("avatar_icons/${UUID.randomUUID()}")
 
@@ -68,7 +69,7 @@ class ImageRepositoryImpl @Inject constructor(
 
                 userRef.child("avatarURL").setValue(downloadUri.toString())
                 userViewModel.curUser.avatarURL = downloadUri.toString()
-                isLoading.value = false
+                result.value = TransactionState.FINISHED
             } else {
                 Log.d("uploadNewImageErr", "Could not upload new image!")
 

@@ -31,6 +31,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.AppBarDefaults
 import androidx.compose.material.BottomAppBar
 import androidx.compose.material.BottomNavigationItem
@@ -69,9 +71,11 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -162,7 +166,8 @@ fun DrawAvatar(imageUri: MutableState<Uri?>, bitmap: MutableState<Bitmap?>) {
 @Composable
 fun ProfilePage() {
     val navController = LocalNavController.current
-    val isLoading = remember { mutableStateOf(false) }
+    val focusManager = LocalFocusManager.current
+    val curState = remember { mutableStateOf(TransactionState.FINISHED) }
     val avatarUriMut = remember{
         mutableStateOf(userViewModel.curUser.avatarURL.let { if (it == "") null else it.toUri() })
     }
@@ -173,7 +178,7 @@ fun ProfilePage() {
         mutableStateOf(userViewModel.curUser.work)
     }
     val bitmap = remember { mutableStateOf<Bitmap?>(null) }
-    if(isLoading.value)
+    if(curState.value == TransactionState.LOADING)
         Loader()
     else {
         avatarUriMut.value = userViewModel.curUser.avatarURL.let { if (it == "") null else it.toUri() }
@@ -204,7 +209,9 @@ fun ProfilePage() {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 DrawAvatar(avatarUriMut, bitmap)
-
+                if(curState.value == TransactionState.FINISHED_EXISTS){
+                    Text(text = "* Nickname is already taken!", color = Color.Red)
+                }
                 TextField(
                     value = nickname.value,
                     onValueChange = { newNickname -> nickname.value = newNickname },
@@ -220,6 +227,8 @@ fun ProfilePage() {
                         .padding(bottom = 16.dp)
                         .background(Color.White)
                         .clip(CircleShape),
+
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                 )
 
                 // Profession TextField
@@ -237,12 +246,18 @@ fun ProfilePage() {
                         .padding(horizontal = 16.dp)
                         .padding(bottom = 16.dp)
                         .clip(CircleShape),
+
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = {
+                        userViewModel.updateCurUser(nickname.value, work.value, avatarUriMut.value, curState)
+                        focusManager.clearFocus()
+                    })
                 )
 
                 // Update Button
                 Button(
                     onClick = {
-                        userViewModel.updateCurUser(nickname.value, work.value, avatarUriMut.value, isLoading)
+                        userViewModel.updateCurUser(nickname.value, work.value, avatarUriMut.value, curState)
                     },
                     modifier = Modifier
                         .padding(16.dp)
@@ -304,6 +319,7 @@ fun TopSearchBar() {
         mutableStateOf("")
     }
     val vectorImagePainter: Painter = painterResource(R.drawable.background)
+    val focusManager = LocalFocusManager.current
     Row(
         modifier = Modifier
             .fillMaxSize()
@@ -349,6 +365,11 @@ fun TopSearchBar() {
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent,
             ),
+
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = {
+                focusManager.clearFocus()
+            })
 
             )
 

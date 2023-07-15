@@ -27,6 +27,8 @@ import androidx.compose.foundation.layout.size
 
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
@@ -49,11 +51,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
@@ -84,6 +88,9 @@ sealed class Screen(val route: String) {
     object Home : Screen("home")
     object Profile : Screen("profile")
     object Chat : Screen("chat")
+}
+enum class TransactionState {
+    LOADING, FINISHED, FINISHED_EXISTS
 }
 
 @Composable
@@ -152,6 +159,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun SignUpScreen() {
     val navController = LocalNavController.current
+    val focusManager = LocalFocusManager.current
     var mutNickname by remember {
         mutableStateOf("")
     }
@@ -200,7 +208,8 @@ fun SignUpScreen() {
                             fontSize = 18.sp
                         )
                     },
-                )
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    )
                 Spacer(modifier = Modifier.height(16.dp))
                 TextField(
                     value = mutPass,
@@ -220,8 +229,10 @@ fun SignUpScreen() {
                             fontSize = 18.sp
                         )
                     },
-                    visualTransformation = PasswordVisualTransformation()
-                )
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+
+                    )
                 Spacer(modifier = Modifier.height(16.dp))
                 TextField(
                     value = mutWork,
@@ -241,6 +252,11 @@ fun SignUpScreen() {
                             fontSize = 18.sp
                         )
                     },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = {
+                        signUpAccount(navController, mutNickname, mutPass, mutWork)
+                        focusManager.clearFocus()
+                    })
                 )
                 Spacer(modifier = Modifier.height(100.dp))
                 MainButton(txt = "SIGN UP"){
@@ -303,6 +319,7 @@ fun StartScreen() {
 }
 @Composable
 fun LogInPage(){
+    val focusManager = LocalFocusManager.current
     var mutNickname by remember {
         mutableStateOf("")
     }
@@ -347,7 +364,11 @@ fun LogInPage(){
                             fontSize = 18.sp
                         )
                     },
+
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+
                 )
+
                 Spacer(modifier = Modifier.height(16.dp))
                 TextField(
                     value = mutPass,
@@ -367,7 +388,13 @@ fun LogInPage(){
                             fontSize = 18.sp
                         )
                     },
-                    visualTransformation = PasswordVisualTransformation()
+                    visualTransformation = PasswordVisualTransformation(),
+
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = {
+                        signInAccount(navController, mutNickname, mutPass)
+                        focusManager.clearFocus()
+                    })
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 MainButton(txt = "SIGN IN") {
@@ -383,6 +410,7 @@ fun LogInPage(){
                 RegisterButton()
             }
         }
+
     }
 }
 
@@ -421,7 +449,7 @@ fun signUpAccount(navController: NavHostController, nickname: String, pass: Stri
                 Toast.makeText(navController.context, "Nickname already exists!", Toast.LENGTH_LONG).show()
             }
 
-            override fun onChildDoesNotExist() {
+            override fun onChildDoesNotExist(dataSnapshot: DataSnapshot) {
                 saveUserAndNavigate(navController, nickname, pass, work)
             }
 

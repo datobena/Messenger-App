@@ -25,11 +25,11 @@ class UserRepositoryImpl @Inject constructor(
                 callback.onChildExists(dataSnapshot)
             }
 
-            override fun onChildDoesNotExist() {
+            override fun onChildDoesNotExist(dataSnapshot: DataSnapshot) {
                 val key = firebaseApp.push().key
                 firebaseApp.child(key!!).setValue(User(nickname, PasswordUtils.hashPassword(pass), work))
                 firebaseApp.child("nicknames").child(nickname).setValue(key)
-                callback.onChildDoesNotExist()
+                callback.onChildDoesNotExist(dataSnapshot)
             }
         })
     }
@@ -47,7 +47,7 @@ class UserRepositoryImpl @Inject constructor(
                 }
             }
 
-            override fun onChildDoesNotExist() {
+            override fun onChildDoesNotExist(dataSnapshot: DataSnapshot) {
                 callback.onUserDoesNotExist()
             }
         })
@@ -93,7 +93,7 @@ class UserRepositoryImpl @Inject constructor(
                 if (dataSnapshot.child("nicknames").hasChild(nickname)) {
                     callback.onChildExists(dataSnapshot)
                 } else {
-                    callback.onChildDoesNotExist()
+                    callback.onChildDoesNotExist(dataSnapshot)
                 }
             }
 
@@ -105,7 +105,7 @@ class UserRepositoryImpl @Inject constructor(
     }
     interface ChildExistenceCallback {
         fun onChildExists(dataSnapshot: DataSnapshot)
-        fun onChildDoesNotExist()
+        fun onChildDoesNotExist(dataSnapshot: DataSnapshot)
     }
     interface UserExistenceCallback {
         fun onUserExists(user: User)

@@ -1,26 +1,16 @@
 import android.annotation.SuppressLint
-import android.util.Log
-
-
 import androidx.compose.foundation.Image
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-
 import androidx.compose.foundation.layout.*
-
-
 import androidx.compose.foundation.lazy.LazyColumn
-
 import androidx.compose.foundation.lazy.items
-
 import androidx.compose.foundation.shape.CircleShape
-
 import androidx.compose.foundation.shape.RoundedCornerShape
-
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.Card
-
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.LocalTextStyle
@@ -28,43 +18,37 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
 import androidx.compose.material.TextFieldDefaults
-
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-
 import androidx.compose.ui.graphics.Color
-
-
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ge.dbenadshis.messengerapp.Loader
+import ge.dbenadshis.messengerapp.LocalNavController
 import ge.dbenadshis.messengerapp.R
+import ge.dbenadshis.messengerapp.Screen
 import ge.dbenadshis.messengerapp.Utils.Companion.formatDate
 import ge.dbenadshis.messengerapp.chatViewModel
 import ge.dbenadshis.messengerapp.model.Message
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-
 import me.onebone.toolbar.CollapsingToolbarScaffold
-
 import me.onebone.toolbar.ScrollStrategy
 import me.onebone.toolbar.rememberCollapsingToolbarScaffoldState
 
@@ -75,15 +59,17 @@ fun ChatScreen(currentUser: String, friend: String) {
         ChatScreenCreate(currentUser, friend)
     }
 }
+
 @Composable
 fun ChatScreenCreate(currentUser: String, friend: String) {
     val state = rememberCollapsingToolbarScaffoldState()
     val enabled by remember { mutableStateOf(true) }
     val messages by chatViewModel.allMessages.observeAsState(listOf())
     val currentFriend by chatViewModel.currentFriend.collectAsState()
-    if(currentFriend == ""){
+    val navController = LocalNavController.current
+    if (currentFriend == "") {
         Loader()
-    }else {
+    } else {
         Box {
             CollapsingToolbarScaffold(
                 modifier = Modifier.fillMaxSize(),
@@ -117,7 +103,7 @@ fun ChatScreenCreate(currentUser: String, friend: String) {
                                 .height(45.dp)
                                 .align(Alignment.TopStart)
                                 .clickable {
-                                    Log.d("Search page", "handle returning to home")
+                                    navController.navigate(Screen.Home.route)
                                 },
                             tint = Color.White,
                         )
@@ -156,14 +142,15 @@ fun ChatScreenCreate(currentUser: String, friend: String) {
             ) {
                 LazyColumn(
                     modifier = Modifier
-                        .fillMaxWidth()
+                        .fillMaxSize()
                         .padding(bottom = MESSAGE_TEXT_FIELD)
                 ) {
                     items(
                         messages
                     ) { message ->
-                        if((chatViewModel.getCurrentFriend() == message.receiver && message.isSentByCurrentUser) ||
-                            (chatViewModel.getCurrentFriend() == message.sender && !message.isSentByCurrentUser)   ) {
+                        if ((chatViewModel.getCurrentFriend() == message.receiver && message.isSentByCurrentUser) ||
+                            (chatViewModel.getCurrentFriend() == message.sender && !message.isSentByCurrentUser)
+                        ) {
                             ChatMessageItem(message)
                         }
                     }
@@ -189,6 +176,7 @@ fun ChatScreenCreate(currentUser: String, friend: String) {
         }
     }
 }
+
 @Composable
 fun ChatBottom(onclick: (txt: ChatMessage) -> Unit) {
     var text by remember {
@@ -202,20 +190,22 @@ fun ChatBottom(onclick: (txt: ChatMessage) -> Unit) {
     ) {
         TextField(
             value = text,
-            trailingIcon = {IconButton(
-                onClick = {
-                    if (text.isNotEmpty()) {
-                        onclick(ChatMessage(text, System.currentTimeMillis().toString(), true))
-                        text = ""
-                    }
-                },
-            ) {
-                Icon(
-                    Icons.Default.Send,
-                    contentDescription = "",
-                    tint = Color.Black
-                )
-            }},
+            trailingIcon = {
+                IconButton(
+                    onClick = {
+                        if (text.isNotEmpty()) {
+                            onclick(ChatMessage(text, System.currentTimeMillis().toString(), true))
+                            text = ""
+                        }
+                    },
+                ) {
+                    Icon(
+                        Icons.Default.Send,
+                        contentDescription = "",
+                        tint = Color.Black
+                    )
+                }
+            },
             onValueChange = { text = it },
             modifier = Modifier
                 .fillMaxWidth()
@@ -238,10 +228,19 @@ fun ChatBottom(onclick: (txt: ChatMessage) -> Unit) {
                         .padding(vertical = 8.dp) // Adjust the vertical padding as needed
                 )
             },
-            textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Start, fontSize = 18.sp)
+            textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Start, fontSize = 18.sp),
+
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+            keyboardActions = KeyboardActions(onSend = {
+                if (text.isNotEmpty()) {
+                    onclick(ChatMessage(text, System.currentTimeMillis().toString(), true))
+                    text = ""
+                }
+            })
         )
     }
 }
+
 @Composable
 fun ChatMessageItem(message: Message) {
     val isSentByCurrentUser = message.isSentByCurrentUser
@@ -257,7 +256,7 @@ fun ChatMessageItem(message: Message) {
             .fillMaxWidth(),
         horizontalArrangement = if (isSentByCurrentUser) Arrangement.End else Arrangement.Start
     ) {
-        if(isSentByCurrentUser){
+        if (isSentByCurrentUser) {
             Text(
                 text = message.date.formatDate(),
                 modifier = Modifier
@@ -273,13 +272,15 @@ fun ChatMessageItem(message: Message) {
             backgroundColor = getBubbleColor(isSentByCurrentUser)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text(text = message.message, color = if (isSentByCurrentUser) colorResource(
-                    id = R.color.white
-                ) else colorResource(id = R.color.dark_blue))
+                Text(
+                    text = message.message, color = if (isSentByCurrentUser) colorResource(
+                        id = R.color.white
+                    ) else colorResource(id = R.color.dark_blue)
+                )
             }
         }
 
-        if(!isSentByCurrentUser){
+        if (!isSentByCurrentUser) {
             Text(
                 text = message.date.formatDate(),
                 modifier = Modifier
@@ -301,6 +302,10 @@ fun getBubbleColor(isSentByCurrentUser: Boolean): Color {
     }
 }
 
-data class ChatMessage(val content: String, val date: String, val isSentByCurrentUser: Boolean = false)
+data class ChatMessage(
+    val content: String,
+    val date: String,
+    val isSentByCurrentUser: Boolean = false
+)
 
 val MESSAGE_TEXT_FIELD = 90.dp

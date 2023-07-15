@@ -1,6 +1,5 @@
 package ge.dbenadshis.messengerapp
 
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -16,6 +15,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.Icon
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
@@ -34,8 +35,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ge.dbenadshis.messengerapp.model.User
@@ -105,6 +108,8 @@ fun ProfileItem(user: User) {
 @Composable
 fun SearchBar() {
     val searchText by userViewModel.searchText.collectAsState()
+    val navController = LocalNavController.current
+    val focusManager = LocalFocusManager.current
     Row(
         modifier = Modifier
             .height(100.dp)
@@ -120,7 +125,7 @@ fun SearchBar() {
                 .width(40.dp)
                 .height(40.dp)
                 .clickable {
-                    Log.d("Search page", "handle returning to home")
+                    navController.popBackStack()
                 },
             tint = Color.White,
         )
@@ -147,7 +152,12 @@ fun SearchBar() {
                 backgroundColor = colorResource(id = R.color.search_back),
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent,
-            )
+            ),
+
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = {
+                focusManager.clearFocus()
+            })
         )
     }
 }
