@@ -1,6 +1,8 @@
 package ge.dbenadshis.messengerapp.database
 
 import android.net.Uri
+import android.util.Log
+import androidx.compose.runtime.MutableState
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
@@ -14,45 +16,44 @@ import javax.inject.Named
 
 
 class ImageRepositoryImpl @Inject constructor(
-    @Named("images") private val imagesReference: StorageReference,
+    @Named("images") val imagesReference: StorageReference,
     @Named("users") private val usersReference: DatabaseReference
 ) : ImageRepository {
-    override fun uploadImgAndSaveURL(imageUri: Uri, userId: String) {
-
-        // Get current user's data from Realtime Database
+    override fun uploadImgAndSaveURL(
+        imageUri: Uri,
+        userId: String,
+        isLoading: MutableState<Boolean>
+    ) {
         val userRef = usersReference.child(userId)
         userRef.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(dataSnapshot: DataSnapshot) {
                 val currentUser = dataSnapshot.getValue(User::class.java)
 
-                // Delete the current user's existing image in Firebase Storage
                 if (currentUser != null && currentUser.avatarURL.isNotEmpty()) {
                     val oldImageRef = imagesReference.storage.getReferenceFromUrl(currentUser.avatarURL)
                     oldImageRef.delete().addOnSuccessListener {
-                        uploadNewImage(imageUri, imagesReference, userRef)
+                        uploadNewImage(imageUri, imagesReference, userRef, isLoading)
                     }.addOnFailureListener { exception ->
-                        // Handle failure to delete old image
-                        // ...
+                        Log.d("uploadImageAndSaveURLErr", "Could not delete previous image from database! ${exception.message}")
                     }
                 } else {
-                    uploadNewImage(imageUri, imagesReference, userRef)
+                    uploadNewImage(imageUri, imagesReference, userRef, isLoading)
                 }
             }
 
             override fun onCancelled(databaseError: DatabaseError) {
-                // Handle cancellation
-                // ...
+                Log.d("uploadImageAndSaveURLErr", "Request was cancelled! ${databaseError.message}")
             }
         })
     }
     private fun uploadNewImage(
         imageUri: Uri,
         storageRef: StorageReference,
-        userRef: DatabaseReference
+        userRef: DatabaseReference,
+        isLoading: MutableState<Boolean>
     ) {
         val imagesRef = storageRef.child("avatar_icons/${UUID.randomUUID()}")
 
-        // Upload image to Firebase Storage
         val uploadTask = imagesRef.putFile(imageUri)
         uploadTask.continueWithTask { task ->
             if (!task.isSuccessful) {
@@ -65,15 +66,12 @@ class ImageRepositoryImpl @Inject constructor(
             if (task.isSuccessful) {
                 val downloadUri = task.result
 
-                // Save image URL to Realtime Database
                 userRef.child("avatarURL").setValue(downloadUri.toString())
                 userViewModel.curUser.avatarURL = downloadUri.toString()
-
-                // Handle success
-                // ...
+                isLoading.value = false
             } else {
-                // Handle failure
-                // ...
+                Log.d("uploadNewImageErr", "Could not upload new image!")
+
             }
         }
     }
