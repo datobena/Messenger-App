@@ -64,6 +64,9 @@ class UserViewModel @Inject constructor(
     fun onSearchTextChange(text: String){
         _searchText.value =  text
     }
+    suspend fun getNicknameFrom(key:String): User{
+        return  userRepo.getNicknameFromKey(key)
+    }
 
     suspend fun addUser(nickname: String, pass: String, work: String, callback: ChildExistenceCallback){
         val repoImpl = userRepository as UserRepositoryImpl

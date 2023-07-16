@@ -1,6 +1,5 @@
 package ge.dbenadshis.messengerapp.database
 
-import android.content.Context
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 
@@ -33,7 +32,6 @@ class ChatRepositoryImpl @Inject constructor(
         val temp = object : ChildEventListener {
             override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
                 val message = snapshot.getValue(Message::class.java) ?: return
-                println(message.toString())
                 addMessageInList(message)
             }
 
