@@ -9,6 +9,7 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ValueEventListener
 import dagger.hilt.android.lifecycle.HiltViewModel
+import ge.dbenadshis.messengerapp.MissingFields
 import ge.dbenadshis.messengerapp.TransactionState
 import ge.dbenadshis.messengerapp.database.UserRepositoryImpl.ChildExistenceCallback
 import ge.dbenadshis.messengerapp.model.User
@@ -92,51 +93,64 @@ class UserViewModel @Inject constructor(
         }
     }
 
-    fun updateCurUser(nickname: String, work: String, uri: Uri?, result: MutableState<TransactionState>) {
-        if(nickname == curUser.nickname && work == curUser.work && (uri?.toString() ?: "") == curUser.avatarURL) {
-            result.value = TransactionState.FINISHED
-            return
-        }
-        result.value = TransactionState.LOADING
-        val repoImpl = userRepository as UserRepositoryImpl
-        val lastNickname = curUser.nickname
-        repoImpl.nicknameExists(nickname, object : ChildExistenceCallback{
-            override fun onChildExists(dataSnapshot: DataSnapshot) {
-                if(nickname == lastNickname) {
-                    onChildDoesNotExist(dataSnapshot)
+    fun updateCurUser(
+        nickname: String,
+        work: String,
+        uri: Uri?,
+        result: MutableState<TransactionState>,
+        mutMissingField: MutableState<MissingFields>
+    ) {
+        when(""){
+            nickname -> mutMissingField.value = MissingFields.NICKNAME
+            work -> mutMissingField.value = MissingFields.WORK
+            else -> {
+                mutMissingField.value = MissingFields.NONE
+                if(nickname == curUser.nickname && work == curUser.work && (uri?.toString() ?: "") == curUser.avatarURL) {
+                    result.value = TransactionState.FINISHED
                     return
                 }
-                Log.d("updateUserErr", "User with given name already exists")
-                result.value = TransactionState.FINISHED_EXISTS
-            }
-
-            override fun onChildDoesNotExist(dataSnapshot: DataSnapshot) {
-                val key = dataSnapshot.child("nicknames").child(lastNickname).getValue(String::class.java)
-                val userRef = dataSnapshot.child(key!!).ref
-                val nicknamesRef = dataSnapshot.child("nicknames").ref
-                nicknamesRef.child(lastNickname).removeValue()
-                nicknamesRef.ref.child(nickname).setValue(key)
-                userRef.child("nickname").setValue(nickname)
-                userRef.child("work").setValue(work)
-                if(uri != null && uri.toString() != curUser.avatarURL)
-                    imageRepo.uploadImgAndSaveURL(uri, key, result)
-                else
-                    result.value = TransactionState.FINISHED
-                sharedPreferences!!.edit().putString("nickname", nickname).apply()
-
-                userRef.addListenerForSingleValueEvent(object : ValueEventListener {
-                    override fun onDataChange(dataSnapshot: DataSnapshot) {
-                        val updatedUser = dataSnapshot.getValue(User::class.java)
-                        curUser = updatedUser!!
-
+                result.value = TransactionState.LOADING
+                val repoImpl = userRepository as UserRepositoryImpl
+                val lastNickname = curUser.nickname
+                repoImpl.nicknameExists(nickname, object : ChildExistenceCallback{
+                    override fun onChildExists(dataSnapshot: DataSnapshot) {
+                        if(nickname == lastNickname) {
+                            onChildDoesNotExist(dataSnapshot)
+                            return
+                        }
+                        Log.d("updateUserErr", "User with given name already exists")
+                        result.value = TransactionState.FINISHED_EXISTS
                     }
 
-                    override fun onCancelled(databaseError: DatabaseError) {
-                        Log.d("updateUserErr", "Request to database has been canceled! ${databaseError.message}")
+                    override fun onChildDoesNotExist(dataSnapshot: DataSnapshot) {
+                        val key = dataSnapshot.child("nicknames").child(lastNickname).getValue(String::class.java)
+                        val userRef = dataSnapshot.child(key!!).ref
+                        val nicknamesRef = dataSnapshot.child("nicknames").ref
+                        nicknamesRef.child(lastNickname).removeValue()
+                        nicknamesRef.ref.child(nickname).setValue(key)
+                        userRef.child("nickname").setValue(nickname)
+                        userRef.child("work").setValue(work)
+                        if(uri != null && uri.toString() != curUser.avatarURL)
+                            imageRepo.uploadImgAndSaveURL(uri, key, result)
+                        else
+                            result.value = TransactionState.FINISHED
+                        sharedPreferences!!.edit().putString("nickname", nickname).apply()
+
+                        userRef.addListenerForSingleValueEvent(object : ValueEventListener {
+                            override fun onDataChange(dataSnapshot: DataSnapshot) {
+                                val updatedUser = dataSnapshot.getValue(User::class.java)
+                                curUser = updatedUser!!
+
+                            }
+
+                            override fun onCancelled(databaseError: DatabaseError) {
+                                Log.d("updateUserErr", "Request to database has been canceled! ${databaseError.message}")
+                            }
+                        })
                     }
+
                 })
             }
-
-        })
+        }
     }
 }

@@ -42,6 +42,7 @@ import androidx.compose.material.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -89,8 +90,13 @@ sealed class Screen(val route: String) {
     object Profile : Screen("profile")
     object Chat : Screen("chat")
 }
+
 enum class TransactionState {
     LOADING, FINISHED, FINISHED_EXISTS
+}
+
+enum class MissingFields {
+    NICKNAME, WORK, PASSWORD, NONE
 }
 
 @Composable
@@ -169,6 +175,9 @@ fun SignUpScreen() {
     var mutWork by remember {
         mutableStateOf("")
     }
+    val mutMissingField = remember {
+        mutableStateOf(MissingFields.NONE)
+    }
     Surface(color = MaterialTheme.colors.background) {
         Column(
             modifier = Modifier
@@ -189,6 +198,7 @@ fun SignUpScreen() {
                         .fillMaxWidth(0.6f) // Set the desired width as a fraction of the available width
                         .aspectRatio(1f) //
                 )
+                HandleMissingFieldMessage(mutMissingField.value)
                 Spacer(modifier = Modifier.height(16.dp))
                 TextField(
                     value = mutNickname,
@@ -209,7 +219,7 @@ fun SignUpScreen() {
                         )
                     },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                    )
+                )
                 Spacer(modifier = Modifier.height(16.dp))
                 TextField(
                     value = mutPass,
@@ -254,25 +264,29 @@ fun SignUpScreen() {
                     },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(onDone = {
-                        signUpAccount(navController, mutNickname, mutPass, mutWork)
+                        signUpAccount(navController, mutNickname, mutPass, mutWork, mutMissingField)
                         focusManager.clearFocus()
                     })
                 )
                 Spacer(modifier = Modifier.height(100.dp))
-                MainButton(txt = "SIGN UP"){
-                    signUpAccount(navController, mutNickname, mutPass, mutWork)
+                MainButton(txt = "SIGN UP") {
+                    signUpAccount(navController, mutNickname, mutPass, mutWork, mutMissingField)
                 }
             }
         }
     }
 }
+
 @Composable
 fun Loader() {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally,verticalArrangement = Arrangement.Center) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
             Text(
                 text = "PLEASE WAIT...",
                 style = TextStyle(
@@ -302,29 +316,35 @@ fun StartScreen() {
             userViewModel.checkUser(nickname, pass,
                 object : UserRepositoryImpl.UserExistenceCallback {
                     override fun onUserExists(user: User) {
-                        sharedPreferences!!.edit().putString("nickname", user.nickname).putString("pass", pass).apply()
+                        sharedPreferences!!.edit().putString("nickname", user.nickname)
+                            .putString("pass", pass).apply()
                         userViewModel.curUser = user
                         chatViewModel.setListeners(user.nickname)
                         navController.navigate(Screen.Home.route)
                     }
+
                     override fun onUserDoesNotExist() {
                         navController.navigate(Screen.Login.route)
                     }
                 }
             )
-        }else{
+        } else {
             navController.navigate(Screen.Login.route)
         }
     })
 }
+
 @Composable
-fun LogInPage(){
+fun LogInPage() {
     val focusManager = LocalFocusManager.current
     var mutNickname by remember {
         mutableStateOf("")
     }
     var mutPass by remember {
         mutableStateOf("")
+    }
+    val mutMissingField = remember {
+        mutableStateOf(MissingFields.NONE)
     }
     Surface(color = MaterialTheme.colors.background) {
         val navController = LocalNavController.current
@@ -345,6 +365,7 @@ fun LogInPage(){
                         .fillMaxWidth(0.6f) // Set the desired width as a fraction of the available width
                         .aspectRatio(1f) //
                 )
+                HandleMissingFieldMessage(mutMissingField.value)
                 Spacer(modifier = Modifier.height(16.dp))
                 TextField(
                     value = mutNickname,
@@ -367,7 +388,7 @@ fun LogInPage(){
 
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
 
-                )
+                    )
 
                 Spacer(modifier = Modifier.height(16.dp))
                 TextField(
@@ -392,13 +413,13 @@ fun LogInPage(){
 
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(onDone = {
-                        signInAccount(navController, mutNickname, mutPass)
+                        signInAccount(navController, mutNickname, mutPass, mutMissingField)
                         focusManager.clearFocus()
                     })
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 MainButton(txt = "SIGN IN") {
-                    signInAccount(navController, mutNickname, mutPass)
+                    signInAccount(navController, mutNickname, mutPass, mutMissingField)
                 }
                 Spacer(modifier = Modifier.height(100.dp))
             }
@@ -414,49 +435,108 @@ fun LogInPage(){
     }
 }
 
+@Composable
+fun HandleMissingFieldMessage(missingField: MissingFields) {
+    when (missingField) {
+        MissingFields.NICKNAME -> Text(text = "* Please fill in your nickname!", color = Color.Red)
+        MissingFields.PASSWORD -> Text(text = "* Please fill in your password!", color = Color.Red)
+        MissingFields.WORK -> Text(text = "* Please fill in your work!", color = Color.Red)
+        else -> {}
+    }
+}
+
 private fun saveUserAndNavigate(
     navController: NavHostController,
     nickname: String,
     pass: String,
     work: String,
     avatarURL: String = ""
-){
+) {
     sharedPreferences!!.edit().putString("nickname", nickname).putString("pass", pass).apply()
     userViewModel.curUser = User(nickname, pass, work, avatarURL)
     chatViewModel.setListeners(nickname)
     navController.navigate(Screen.Home.route)
 }
 
-fun signInAccount(navController: NavHostController, nickname: String, pass: String) {
-    CoroutineScope(Dispatchers.Default).launch {
-        userViewModel.checkUser(nickname, pass, object : UserRepositoryImpl.UserExistenceCallback {
-            override fun onUserExists(user: User) {
-                saveUserAndNavigate(navController, nickname, pass, user.work, user.avatarURL)
-            }
+fun signInAccount(
+    navController: NavHostController,
+    nickname: String,
+    pass: String,
+    missingFields: MutableState<MissingFields>
+) {
+    when ("") {
+        nickname -> missingFields.value = MissingFields.NICKNAME
+        pass -> missingFields.value = MissingFields.PASSWORD
+        else -> {
+            missingFields.value = MissingFields.NONE
+            CoroutineScope(Dispatchers.Default).launch {
+                userViewModel.checkUser(
+                    nickname,
+                    pass,
+                    object : UserRepositoryImpl.UserExistenceCallback {
+                        override fun onUserExists(user: User) {
+                            saveUserAndNavigate(
+                                navController,
+                                nickname,
+                                pass,
+                                user.work,
+                                user.avatarURL
+                            )
+                        }
 
-            override fun onUserDoesNotExist() {
-                Toast.makeText(navController.context, "Nickname or password is incorrect!", Toast.LENGTH_LONG).show()
-            }
+                        override fun onUserDoesNotExist() {
+                            Toast.makeText(
+                                navController.context,
+                                "Nickname or password is incorrect!",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
 
-        })
+                    })
+            }
+        }
     }
 
 }
-fun signUpAccount(navController: NavHostController, nickname: String, pass: String, work: String) {
-    CoroutineScope(Dispatchers.Default).launch {
-        userViewModel.addUser(nickname, pass, work, object : UserRepositoryImpl.ChildExistenceCallback {
-            override fun onChildExists(dataSnapshot: DataSnapshot) {
-                Toast.makeText(navController.context, "Nickname already exists!", Toast.LENGTH_LONG).show()
-            }
 
-            override fun onChildDoesNotExist(dataSnapshot: DataSnapshot) {
-                saveUserAndNavigate(navController, nickname, pass, work)
-            }
+fun signUpAccount(
+    navController: NavHostController,
+    nickname: String,
+    pass: String,
+    work: String,
+    missingFields: MutableState<MissingFields>
+) {
+    when ("") {
+        nickname -> missingFields.value = MissingFields.NICKNAME
+        pass -> missingFields.value = MissingFields.PASSWORD
+        work -> missingFields.value = MissingFields.WORK
+        else -> {
+            missingFields.value = MissingFields.NONE
+            CoroutineScope(Dispatchers.Default).launch {
+                userViewModel.addUser(
+                    nickname,
+                    pass,
+                    work,
+                    object : UserRepositoryImpl.ChildExistenceCallback {
+                        override fun onChildExists(dataSnapshot: DataSnapshot) {
+                            Toast.makeText(
+                                navController.context,
+                                "Nickname already exists!",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
 
-        })
+                        override fun onChildDoesNotExist(dataSnapshot: DataSnapshot) {
+                            saveUserAndNavigate(navController, nickname, pass, work)
+                        }
+
+                    })
+            }
+        }
     }
 
 }
+
 @Composable
 fun MainButton(txt: String, onClick: () -> Unit) {
     Button(

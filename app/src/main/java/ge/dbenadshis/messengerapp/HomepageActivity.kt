@@ -101,31 +101,25 @@ fun DrawAvatar(imageUri: MutableState<Uri?>, bitmap: MutableState<Bitmap?>) {
             imageUri.value = uri
         }
 
-    LaunchedEffect(imageUri.value) {
-        if(bitmap.value == null || imageUri.value.toString() != userViewModel.curUser.avatarURL) {
-            if (imageUri.value != null) {
-                if (imageUri.value.toString().startsWith("http")) {
-                    isLoading.value = true
-                    // Download the image from Firebase Storage
-                    val storageRef =
-                        userViewModel.imageRepo.imagesReference.storage.getReferenceFromUrl(imageUri.value.toString())
-                    val byteArray = storageRef.getBytes(10 * 1024 * 1024).await()
-                    bitmap.value = BitmapFactory.decodeByteArray(byteArray, 0, byteArray.size)
-                    isLoading.value = false
-                } else if (Build.VERSION.SDK_INT < 28) {
-                    bitmap.value =
-                        MediaStore.Images.Media.getBitmap(context.contentResolver, imageUri.value)
-                } else {
-                    val source =
-                        ImageDecoder.createSource(context.contentResolver, imageUri.value!!)
-                    bitmap.value = ImageDecoder.decodeBitmap(source)
+    if (bitmap.value == null || imageUri.value.toString() != userViewModel.curUser.avatarURL) {
+        if (imageUri.value != null) {
+            if (imageUri.value.toString().startsWith("http")) {
+                LaunchedEffect(imageUri.value) {
+                    downloadBitmap(bitmap, imageUri, isLoading)
                 }
+            } else if (Build.VERSION.SDK_INT < 28) {
+                bitmap.value =
+                    MediaStore.Images.Media.getBitmap(context.contentResolver, imageUri.value)
             } else {
-                bitmap.value = BitmapFactory.decodeResource(
-                    context.resources,
-                    R.drawable.avatar_image_placeholder
-                )
+                val source =
+                    ImageDecoder.createSource(context.contentResolver, imageUri.value!!)
+                bitmap.value = ImageDecoder.decodeBitmap(source)
             }
+        } else {
+            bitmap.value = BitmapFactory.decodeResource(
+                context.resources,
+                R.drawable.avatar_image_placeholder
+            )
         }
     }
 
@@ -162,26 +156,43 @@ fun DrawAvatar(imageUri: MutableState<Uri?>, bitmap: MutableState<Bitmap?>) {
     }
 }
 
+suspend fun downloadBitmap(
+    bitmap: MutableState<Bitmap?>,
+    imageUri: MutableState<Uri?>,
+    loading: MutableState<Boolean>
+) {
+    loading.value = true
+    val storageRef =
+        userViewModel.imageRepo.imagesReference.storage.getReferenceFromUrl(imageUri.value.toString())
+    val byteArray = storageRef.getBytes(10 * 1024 * 1024).await()
+    bitmap.value = BitmapFactory.decodeByteArray(byteArray, 0, byteArray.size)
+    loading.value = false
+}
+
 
 @Composable
 fun ProfilePage() {
     val navController = LocalNavController.current
     val focusManager = LocalFocusManager.current
     val curState = remember { mutableStateOf(TransactionState.FINISHED) }
-    val avatarUriMut = remember{
+    val avatarUriMut = remember {
         mutableStateOf(userViewModel.curUser.avatarURL.let { if (it == "") null else it.toUri() })
     }
-    val nickname = remember{
+    val nickname = remember {
         mutableStateOf(userViewModel.curUser.nickname)
     }
-    val work = remember{
+    val work = remember {
         mutableStateOf(userViewModel.curUser.work)
     }
     val bitmap = remember { mutableStateOf<Bitmap?>(null) }
-    if(curState.value == TransactionState.LOADING)
+    val mutMissingField = remember {
+        mutableStateOf(MissingFields.NONE)
+    }
+    if (curState.value == TransactionState.LOADING)
         Loader()
     else {
-        avatarUriMut.value = userViewModel.curUser.avatarURL.let { if (it == "") null else it.toUri() }
+        avatarUriMut.value =
+            userViewModel.curUser.avatarURL.let { if (it == "") null else it.toUri() }
         Scaffold(
             bottomBar = {
                 AddBottomAppBar(navController, null)
@@ -209,7 +220,8 @@ fun ProfilePage() {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 DrawAvatar(avatarUriMut, bitmap)
-                if(curState.value == TransactionState.FINISHED_EXISTS){
+                HandleMissingFieldMessage(mutMissingField.value)
+                if (curState.value == TransactionState.FINISHED_EXISTS) {
                     Text(text = "* Nickname is already taken!", color = Color.Red)
                 }
                 TextField(
@@ -249,7 +261,13 @@ fun ProfilePage() {
 
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(onDone = {
-                        userViewModel.updateCurUser(nickname.value, work.value, avatarUriMut.value, curState)
+                        userViewModel.updateCurUser(
+                            nickname.value,
+                            work.value,
+                            avatarUriMut.value,
+                            curState,
+                            mutMissingField
+                        )
                         focusManager.clearFocus()
                     })
                 )
@@ -257,7 +275,13 @@ fun ProfilePage() {
                 // Update Button
                 Button(
                     onClick = {
-                        userViewModel.updateCurUser(nickname.value, work.value, avatarUriMut.value, curState)
+                        userViewModel.updateCurUser(
+                            nickname.value,
+                            work.value,
+                            avatarUriMut.value,
+                            curState,
+                            mutMissingField
+                        )
                     },
                     modifier = Modifier
                         .padding(16.dp)
@@ -371,7 +395,7 @@ fun TopSearchBar() {
                 focusManager.clearFocus()
             })
 
-            )
+        )
 
     }
 }
