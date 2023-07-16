@@ -1,5 +1,7 @@
 package ge.dbenadshis.messengerapp
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -26,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,12 +38,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.colorResource
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import ge.dbenadshis.messengerapp.model.User
 
 
@@ -67,6 +71,13 @@ fun SearchScreen() {
 
 @Composable
 fun ProfileItem(user: User) {
+    val bitmap = remember { mutableStateOf<Bitmap?>(null) }
+    val uri = user.avatarURL.let{if(it == "") null else it.toUri()}
+    val context = LocalNavController.current.context
+    if(uri != null)
+        LaunchedEffect(user) {
+            downloadBitmap(bitmap, uri, null)
+        }
     var isChat by remember {
         mutableStateOf(false)
     }
@@ -80,7 +91,10 @@ fun ProfileItem(user: User) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Image(
-            painter = painterResource(id = R.drawable.avatar_image_placeholder), // TODO: change
+            bitmap = if(bitmap.value == null) BitmapFactory.decodeResource(
+                context.resources,
+                R.drawable.avatar_image_placeholder
+            ).asImageBitmap() else bitmap.value!!.asImageBitmap(),
             contentDescription = "Profile Photo",
             modifier = Modifier
                 .size(60.dp)

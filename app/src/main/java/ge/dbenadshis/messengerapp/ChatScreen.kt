@@ -1,4 +1,6 @@
 import android.annotation.SuppressLint
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -22,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
@@ -32,18 +35,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.colorResource
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import ge.dbenadshis.messengerapp.Loader
 import ge.dbenadshis.messengerapp.LocalNavController
 import ge.dbenadshis.messengerapp.R
 import ge.dbenadshis.messengerapp.Screen
 import ge.dbenadshis.messengerapp.Utils.Companion.formatDate
 import ge.dbenadshis.messengerapp.chatViewModel
+import ge.dbenadshis.messengerapp.downloadBitmap
 import ge.dbenadshis.messengerapp.model.Message
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -67,7 +72,14 @@ fun ChatScreenCreate(currentUser: String, friend: String) {
     val messages by chatViewModel.allMessages.observeAsState(listOf())
     val currentFriend by chatViewModel.currentFriend.collectAsState()
     val navController = LocalNavController.current
-
+    val bitmap = remember { mutableStateOf<Bitmap?>(null) }
+    val chatItem = chatViewModel.currentChatFriend
+    val uri = chatItem.avatarURL.let{if(it == "") null else it.toUri()}
+    val context = LocalNavController.current.context
+    if(uri != null)
+        LaunchedEffect(chatItem) {
+            downloadBitmap(bitmap, uri, null)
+        }
     if (currentFriend == "") {
         Loader()
     } else {
@@ -129,7 +141,10 @@ fun ChatScreenCreate(currentUser: String, friend: String) {
                             )
                         }
                         Image(
-                            painter = painterResource(id = R.drawable.avatar_image_placeholder),
+                            bitmap = if(bitmap.value == null) BitmapFactory.decodeResource(
+                                context.resources,
+                                R.drawable.avatar_image_placeholder
+                            ).asImageBitmap() else bitmap.value!!.asImageBitmap(),
                             contentDescription = "Logo",
                             modifier = Modifier
                                 .padding(end = 16.dp, top = 8.dp + mn, bottom = 8.dp)

@@ -78,6 +78,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -107,7 +108,7 @@ fun DrawAvatar(imageUri: MutableState<Uri?>, bitmap: MutableState<Bitmap?>) {
         if (imageUri.value != null) {
             if (imageUri.value.toString().startsWith("http")) {
                 LaunchedEffect(imageUri.value) {
-                    downloadBitmap(bitmap, imageUri, isLoading)
+                    downloadBitmap(bitmap, imageUri.value, isLoading)
                 }
             } else if (Build.VERSION.SDK_INT < 28) {
                 bitmap.value =
@@ -133,7 +134,7 @@ fun DrawAvatar(imageUri: MutableState<Uri?>, bitmap: MutableState<Bitmap?>) {
             Image(
                 bitmap = bitmapImage,
                 contentDescription = "Profile Image",
-                contentScale = ContentScale.FillBounds,
+                contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .padding(horizontal = getScreenWidth() * 0.2f, vertical = 32.dp)
                     .aspectRatio(1f)
@@ -160,15 +161,15 @@ fun DrawAvatar(imageUri: MutableState<Uri?>, bitmap: MutableState<Bitmap?>) {
 
 suspend fun downloadBitmap(
     bitmap: MutableState<Bitmap?>,
-    imageUri: MutableState<Uri?>,
-    loading: MutableState<Boolean>
+    imageUri: Uri?,
+    loading: MutableState<Boolean>?
 ) {
-    loading.value = true
+    loading?.value = true
     val storageRef =
-        userViewModel.imageRepo.imagesReference.storage.getReferenceFromUrl(imageUri.value.toString())
+        userViewModel.imageRepo.imagesReference.storage.getReferenceFromUrl(imageUri.toString())
     val byteArray = storageRef.getBytes(10 * 1024 * 1024).await()
     bitmap.value = BitmapFactory.decodeByteArray(byteArray, 0, byteArray.size)
-    loading.value = false
+    loading?.value = false
 }
 
 
@@ -340,7 +341,10 @@ fun getScreenWidth(): Dp {
 }
 
 @Composable
-fun TopSearchBar() {
+fun TopSearchBar(
+    chatItems: MutableState<List<ChatItem>>,
+    filteredChatItems: MutableState<List<ChatItem>>
+) {
     var text by remember {
         mutableStateOf("")
     }
@@ -361,7 +365,10 @@ fun TopSearchBar() {
         ) {
         TextField(
             value = text,
-            onValueChange = { text = it },
+            onValueChange = {
+                text = it
+                filteredChatItems.value = chatItems.value.filter {item -> item.user.nickname.contains(text) }
+            },
             leadingIcon = {
                 Icon(
                     Icons.Filled.Search,
@@ -402,23 +409,29 @@ fun TopSearchBar() {
     }
 }
 
-suspend fun generateItems(messages: List<Message>) : List<ChatItem>{
-    val m : HashMap<String, ChatItem> = HashMap()
-    for(elem in messages){
+
+suspend fun generateItems(
+    messages: List<Message>,
+    curState: MutableState<TransactionState>
+): List<ChatItem> {
+    curState.value = TransactionState.LOADING
+    val m: HashMap<String, ChatItem> = HashMap()
+    for (elem in messages) {
         val temp = if (elem.isSentByCurrentUser) elem.receiver else elem.sender
         val user = userViewModel.getNicknameFrom(temp)
         if (user.nickname == userViewModel.curUser.nickname) continue
-        if (m.containsKey(temp)){
-            if(m[temp]!!.time < elem.date.toLong()){
-                m[temp] = ChatItem("", user.nickname, elem.message, 0, elem.date.toLong(), user)
+        if (m.containsKey(temp)) {
+            if (m[temp]!!.time < elem.date.toLong()) {
+                m[temp] = ChatItem(user.nickname, elem.message, elem.date.toLong(), user)
             }
-        }else{
-            m[temp] = ChatItem("", user.nickname, elem.message, 0, elem.date.toLong(), user)
+        } else {
+            m[temp] = ChatItem(user.nickname, elem.message, elem.date.toLong(), user)
         }
     }
-    var res  = m.values.toMutableList()
+    val res = m.values.toMutableList()
     res.sortBy { it.time }
     res.reverse()
+    curState.value = TransactionState.FINISHED
     return res
 }
 
@@ -426,53 +439,62 @@ suspend fun generateItems(messages: List<Message>) : List<ChatItem>{
 fun HomePage() {
     val navController = LocalNavController.current
     val messages by chatViewModel.allMessages.observeAsState(listOf())
-    var chatItems by remember {
+    val curState = remember { mutableStateOf(TransactionState.FINISHED) }
+    val chatItems = remember {
+        mutableStateOf(listOf<ChatItem>())
+    }
+    val filteredChatItems = remember {
         mutableStateOf(listOf<ChatItem>())
     }
     LaunchedEffect(messages) {
         println(messages.toString())
-        chatItems = generateItems(messages)
+        chatItems.value = generateItems(messages, curState)
+        filteredChatItems.value = chatItems.value
     }
     val lazyListState = rememberLazyListState()
-    Scaffold(
-        bottomBar = {
-            AddBottomAppBar(navController, lazyListState)
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { navController.navigate(Screen.Search.route) },
-                elevation = FloatingActionButtonDefaults.elevation(
-                    defaultElevation = 8.dp,
-                    pressedElevation = 0.dp
-                ),
-                backgroundColor = colorResource(id = R.color.background)
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White)
-            }
-        },
-        isFloatingActionButtonDocked = true,
-        floatingActionButtonPosition = FabPosition.Center,
-        topBar = {
-
-            Box(
-
-                modifier = Modifier
-                    .background(colorResource(R.color.background))
-                    .animateContentSize(animationSpec = tween(300))
-                    .height(maxOf(92.dp, getScreenHeight() * 0.3f - lazyListState.scrolled))
-                    .fillMaxWidth(),
+    if (curState.value == TransactionState.LOADING)
+        Loader()
+    else {
+        Scaffold(
+            bottomBar = {
+                AddBottomAppBar(navController, lazyListState)
+            },
+            floatingActionButton = {
+                FloatingActionButton(
+                    onClick = { navController.navigate(Screen.Search.route) },
+                    elevation = FloatingActionButtonDefaults.elevation(
+                        defaultElevation = 8.dp,
+                        pressedElevation = 0.dp
+                    ),
+                    backgroundColor = colorResource(id = R.color.background)
                 ) {
-                TopSearchBar()
-            }
+                    Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White)
+                }
+            },
+            isFloatingActionButtonDocked = true,
+            floatingActionButtonPosition = FabPosition.Center,
+            topBar = {
 
-        }
-    ) {
-        LazyColumn(
-            modifier = Modifier.padding(it),
-            state = lazyListState
+                Box(
+                    modifier = Modifier
+                        .background(colorResource(R.color.background))
+                        .animateContentSize(animationSpec = tween(300))
+                        .height(maxOf(92.dp, getScreenHeight() * 0.3f - lazyListState.scrolled))
+                        .fillMaxWidth(),
+                ) {
+                    TopSearchBar(chatItems, filteredChatItems)
+                }
+
+            }
         ) {
-            items(chatItems) { chatItem ->
-                ChatItem(chatItem)
+            LazyColumn(
+                modifier = Modifier.padding(it),
+                state = lazyListState,
+
+            ) {
+                items(filteredChatItems.value) { chatItem ->
+                    ChatItem(chatItem)
+                }
             }
         }
     }
@@ -529,57 +551,78 @@ fun AddBottomAppBar(
 
 
 data class ChatItem(
-    val id: String,
-    val name: String,
+    val key: String,
     val message: String,
-    val profileImageID: Int,
     val time: Long,
-    val user: User = User()
+    val user: User = User(),
+    val bitmapImage: MutableState<Bitmap?> = mutableStateOf(null)
 )
 
 
 @Composable
 fun ChatItem(chatItem: ChatItem) {
-//    if(chatItem.name == userViewModel.curUser.nickname) return
     val navController = LocalNavController.current
+    val uri = chatItem.user.avatarURL.let { if (it == "") null else it.toUri() }
+    val context = LocalNavController.current.context
+    if (uri != null)
+        LaunchedEffect(chatItem.user.nickname) {
+            downloadBitmap(chatItem.bitmapImage, uri, null)
+        }
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable {
-                chatViewModel.getNickname(chatItem.name)
+                chatViewModel.getNickname(chatItem.key)
                 chatViewModel.currentChatFriend = chatItem.user
                 navController.navigate(Screen.Chat.route)
             }
-            .padding(vertical = 16.dp, horizontal = 16.dp),
-        verticalAlignment = Alignment.Top
+            .padding(vertical = 16.dp),
+        verticalAlignment = Alignment.Top,
     ) {
         // Profile picture
         Surface(
             shape = CircleShape,
-            modifier = Modifier.size(48.dp),
+            modifier = Modifier
+                .padding(start = 16.dp, top = 8.dp)
+                .size(48.dp)
         ) {
             Image(
-                painter = painterResource(id = R.drawable.avatar_image_placeholder),
+                bitmap = if (chatItem.bitmapImage.value == null) BitmapFactory.decodeResource(
+                    context.resources,
+                    R.drawable.avatar_image_placeholder
+                ).asImageBitmap() else chatItem.bitmapImage.value!!.asImageBitmap(),
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
             )
         }
 
         // Name and message
+
         Column(
-            modifier = Modifier.padding(start = 16.dp)
+            modifier = Modifier
+                .padding(start = 16.dp)
+                .weight(1f)
         ) {
-            Row {
-                Text(
-                    text = chatItem.name,
-                    modifier = Modifier.padding(8.dp)
-                )
-                TimeIndicator(sentTime = chatItem.time)
-            }
+            Text(
+                text = chatItem.key,
+                modifier = Modifier.padding(8.dp),
+                fontSize = 22.sp,
+                color = Color.DarkGray
+            )
             Text(
                 text = chatItem.message,
-                modifier = Modifier.padding(8.dp)
+                modifier = Modifier.padding(8.dp),
+                color = Color.Gray,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
+        }
+        Box(
+            modifier = Modifier
+                .padding(horizontal = 8.dp)
+                .align(Alignment.Top)
+        ) {
+            TimeIndicator(sentTime = chatItem.time)
         }
     }
 }
@@ -601,19 +644,13 @@ fun TimeIndicator(sentTime: Long) {
         else -> "Just now"
     }
 
-    Box(
+
+    Text(
+        text = timeAgo,
+        color = Color.Gray,
         modifier = Modifier
-            .padding(start = 16.dp)
-            .fillMaxSize()
-    ) {
-        Text(
-            text = timeAgo,
-            color = Color.Gray,
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(8.dp)
-        )
-    }
+            .padding(8.dp)
+    )
 }
 
 private val LazyListState.scrolled: Dp

@@ -15,7 +15,7 @@ import javax.inject.Inject
 class ChatViewModel @Inject constructor(
     chatRepository: ChatRepository
 ): ViewModel() {
-    var currentChatFriend: User = User()
+    var currentChatFriend = User()
     private val repo : ChatRepositoryImpl = chatRepository as ChatRepositoryImpl
     var allMessages = repo.allMessages
 
