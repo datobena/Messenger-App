@@ -67,6 +67,7 @@ fun ChatScreenCreate(currentUser: String, friend: String) {
     val messages by chatViewModel.allMessages.observeAsState(listOf())
     val currentFriend by chatViewModel.currentFriend.collectAsState()
     val navController = LocalNavController.current
+
     if (currentFriend == "") {
         Loader()
     } else {

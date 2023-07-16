@@ -103,6 +103,15 @@ class UserRepositoryImpl @Inject constructor(
             }
         })
     }
+    suspend fun getNicknameFromKey(key:String): User{
+        val snapshot = firebaseApp
+            .child(key)
+            .get()
+            .await()
+        val user = snapshot.getValue<User>()
+        return user!!
+    }
+
     interface ChildExistenceCallback {
         fun onChildExists(dataSnapshot: DataSnapshot)
         fun onChildDoesNotExist(dataSnapshot: DataSnapshot)

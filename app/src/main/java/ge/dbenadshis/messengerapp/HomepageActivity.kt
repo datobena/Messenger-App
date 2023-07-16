@@ -57,6 +57,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -82,11 +83,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import androidx.navigation.NavController
+import ge.dbenadshis.messengerapp.model.Message
+import ge.dbenadshis.messengerapp.model.User
+
 import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
-import java.util.UUID
 import kotlin.math.floor
 
 
@@ -400,10 +402,37 @@ fun TopSearchBar() {
     }
 }
 
+suspend fun generateItems(messages: List<Message>) : List<ChatItem>{
+    val m : HashMap<String, ChatItem> = HashMap()
+    for(elem in messages){
+        val temp = if (elem.isSentByCurrentUser) elem.receiver else elem.sender
+        val user = userViewModel.getNicknameFrom(temp)
+        if (user.nickname == userViewModel.curUser.nickname) continue
+        if (m.containsKey(temp)){
+            if(m[temp]!!.time < elem.date.toLong()){
+                m[temp] = ChatItem("", user.nickname, elem.message, 0, elem.date.toLong(), user)
+            }
+        }else{
+            m[temp] = ChatItem("", user.nickname, elem.message, 0, elem.date.toLong(), user)
+        }
+    }
+    var res  = m.values.toMutableList()
+    res.sortBy { it.time }
+    res.reverse()
+    return res
+}
+
 @Composable
 fun HomePage() {
     val navController = LocalNavController.current
-    val chatItems = generateRandomChatItems(6)
+    val messages by chatViewModel.allMessages.observeAsState(listOf())
+    var chatItems by remember {
+        mutableStateOf(listOf<ChatItem>())
+    }
+    LaunchedEffect(messages) {
+        println(messages.toString())
+        chatItems = generateItems(messages)
+    }
     val lazyListState = rememberLazyListState()
     Scaffold(
         bottomBar = {
@@ -432,8 +461,6 @@ fun HomePage() {
                     .animateContentSize(animationSpec = tween(300))
                     .height(maxOf(92.dp, getScreenHeight() * 0.3f - lazyListState.scrolled))
                     .fillMaxWidth(),
-
-
                 ) {
                 TopSearchBar()
             }
@@ -506,37 +533,23 @@ data class ChatItem(
     val name: String,
     val message: String,
     val profileImageID: Int,
-    val time: Long
+    val time: Long,
+    val user: User = User()
 )
 
-fun generateRandomChatItems(count: Int): List<ChatItem> {
-    val chatItems = mutableListOf<ChatItem>()
-
-    for (i in 0 until count) {
-        val id = UUID.randomUUID().toString()
-        val name = "User ${i + 1}"
-        val message = "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
-        chatItems.add(
-            ChatItem(
-                id,
-                name,
-                message,
-                R.drawable.avatar_image_placeholder,
-                Date().time
-            )
-        )
-    }
-
-    return chatItems
-}
 
 @Composable
 fun ChatItem(chatItem: ChatItem) {
-    // Display the chat item with its details
-    // Customize this composable to match your chat item UI
+//    if(chatItem.name == userViewModel.curUser.nickname) return
+    val navController = LocalNavController.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable {
+                chatViewModel.getNickname(chatItem.name)
+                chatViewModel.currentChatFriend = chatItem.user
+                navController.navigate(Screen.Chat.route)
+            }
             .padding(vertical = 16.dp, horizontal = 16.dp),
         verticalAlignment = Alignment.Top
     ) {
@@ -546,7 +559,7 @@ fun ChatItem(chatItem: ChatItem) {
             modifier = Modifier.size(48.dp),
         ) {
             Image(
-                painter = painterResource(id = chatItem.profileImageID),
+                painter = painterResource(id = R.drawable.avatar_image_placeholder),
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
             )
