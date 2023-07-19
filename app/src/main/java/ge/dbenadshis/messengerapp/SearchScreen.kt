@@ -65,7 +65,7 @@ fun SearchScreen() {
             Loader()
         } else {
             if(profiles.isEmpty()) {
-                NoUser()
+                NoUserFound()
             }else {
                 LazyColumn(modifier = Modifier.padding(it)) {
                     items(profiles) { profile ->
@@ -78,7 +78,7 @@ fun SearchScreen() {
     }
 }
 @Composable
-fun NoUser() {
+fun NoUserFound() {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
