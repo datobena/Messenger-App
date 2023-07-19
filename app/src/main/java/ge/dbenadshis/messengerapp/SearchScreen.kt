@@ -5,9 +5,12 @@ import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -41,6 +44,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -59,12 +64,36 @@ fun SearchScreen() {
         if (isSearching) {
             Loader()
         } else {
-            LazyColumn(modifier = Modifier.padding(it)) {
-                items(profiles) { profile ->
-                    if (profile.nickname != userViewModel.curUser.nickname)
-                        ProfileItem(profile)
+            if(profiles.isEmpty()) {
+                NoUser()
+            }else {
+                LazyColumn(modifier = Modifier.padding(it)) {
+                    items(profiles) { profile ->
+                        if (profile.nickname != userViewModel.curUser.nickname)
+                            ProfileItem(profile)
+                    }
                 }
             }
+        }
+    }
+}
+@Composable
+fun NoUser() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = "No users found",
+                style = TextStyle(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 24.sp
+                )
+            )
         }
     }
 }

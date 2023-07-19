@@ -46,14 +46,19 @@ class UserViewModel @Inject constructor(
     val isSearching = _isSearching.asStateFlow()
 
     private  var _persons = MutableStateFlow(listOf<User>())
+    var lastSearched = listOf<User>()
     var persons = searchText
         .debounce(1000L)
         .onEach { _isSearching.update { true } }
         .combine(_persons) { text, persons ->
-            if (text.length < 3) {
+            if (text.isEmpty()) {
+                lastSearched = persons
                 persons
+            }else if(text.length < 3){
+                lastSearched
             } else {
-                userRepo.searchUsersOnServer(text)
+                lastSearched = userRepo.searchUsersOnServer(text)
+                lastSearched
             }
         }
         .onEach { _isSearching.update { false } }
