@@ -156,6 +156,17 @@ fun ChatScreenCreate(currentUser: String, friend: String) {
                     }
                 }
             ) {
+                if(messages.isEmpty())
+                    Box(Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(),
+                        contentAlignment = Alignment.Center) {
+                        Text(
+                            text = "No messages here yet...",
+                            textAlign = TextAlign.Center,
+                            color = Color.Gray
+                        )
+                    }
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
