@@ -188,93 +188,91 @@ fun SignUpScreen() {
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.avatar_image_placeholder),
-                    contentDescription = "Logo",
-                    modifier = Modifier
-                        .fillMaxWidth(0.6f) // Set the desired width as a fraction of the available width
-                        .aspectRatio(1f) //
-                )
-                HandleMissingFieldMessage(mutMissingField.value)
-                Spacer(modifier = Modifier.height(16.dp))
-                TextField(
-                    value = mutNickname,
-                    onValueChange = { mutNickname = it },
-                    shape = RoundedCornerShape(28.dp),
-                    colors = TextFieldDefaults.textFieldColors(
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        backgroundColor = colorResource(id = R.color.field_color)
-                    ),
-                    label = {
-                        Text(
-                            "Enter your nickname",
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                            fontSize = 18.sp
-                        )
-                    },
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                TextField(
-                    value = mutPass,
-                    onValueChange = { mutPass = it },
-                    shape = RoundedCornerShape(28.dp),
-                    colors = TextFieldDefaults.textFieldColors(
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        backgroundColor = colorResource(id = R.color.field_color)
-                    ),
-                    label = {
-                        Text(
-                            "Enter your password",
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                            fontSize = 18.sp
-                        )
-                    },
-                    visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-
+            Image(
+                painter = painterResource(id = R.drawable.avatar_image_placeholder),
+                contentDescription = "Logo",
+                modifier = Modifier
+                    .fillMaxWidth(0.6f)
+                    .aspectRatio(1f)
+            )
+            HandleMissingFieldMessage(mutMissingField.value)
+            Spacer(modifier = Modifier.height(16.dp))
+            TextField(
+                value = mutNickname,
+                onValueChange = { mutNickname = it },
+                shape = RoundedCornerShape(28.dp),
+                colors = TextFieldDefaults.textFieldColors(
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    backgroundColor = colorResource(id = R.color.field_color)
+                ),
+                label = {
+                    Text(
+                        "Enter your nickname",
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        fontSize = 18.sp
                     )
-                Spacer(modifier = Modifier.height(16.dp))
-                TextField(
-                    value = mutWork,
-                    onValueChange = { mutWork = it },
-                    shape = RoundedCornerShape(28.dp),
-                    colors = TextFieldDefaults.textFieldColors(
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        backgroundColor = colorResource(id = R.color.field_color)
-                    ),
-                    label = {
-                        Text(
-                            "What I do",
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                            fontSize = 18.sp
-                        )
-                    },
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                    keyboardActions = KeyboardActions(onDone = {
-                        signUpAccount(navController, mutNickname, mutPass, mutWork, mutMissingField)
-                        focusManager.clearFocus()
-                    })
+                },
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            TextField(
+                value = mutPass,
+                onValueChange = { mutPass = it },
+                shape = RoundedCornerShape(28.dp),
+                colors = TextFieldDefaults.textFieldColors(
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    backgroundColor = colorResource(id = R.color.field_color)
+                ),
+                label = {
+                    Text(
+                        "Enter your password",
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        fontSize = 18.sp
+                    )
+                },
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+
                 )
-                Spacer(modifier = Modifier.height(100.dp))
-                MainButton(txt = "SIGN UP") {
+            Spacer(modifier = Modifier.height(16.dp))
+            TextField(
+                value = mutWork,
+                onValueChange = { mutWork = it },
+                shape = RoundedCornerShape(28.dp),
+                colors = TextFieldDefaults.textFieldColors(
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    backgroundColor = colorResource(id = R.color.field_color)
+                ),
+                label = {
+                    Text(
+                        "What I do",
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        fontSize = 18.sp
+                    )
+                },
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = {
                     signUpAccount(navController, mutNickname, mutPass, mutWork, mutMissingField)
-                }
+                    focusManager.clearFocus()
+                })
+            )
+            Spacer(modifier = Modifier.height(50.dp))
+
+            MainButton(txt = "SIGN UP") {
+                signUpAccount(navController, mutNickname, mutPass, mutWork, mutMissingField)
             }
         }
     }
+
 }
 
 @Composable
@@ -362,8 +360,8 @@ fun LogInPage() {
                     painter = painterResource(id = R.drawable.avatar_image_placeholder),
                     contentDescription = "Logo",
                     modifier = Modifier
-                        .fillMaxWidth(0.6f) // Set the desired width as a fraction of the available width
-                        .aspectRatio(1f) //
+                        .fillMaxWidth(0.6f)
+                        .aspectRatio(1f)
                 )
                 HandleMissingFieldMessage(mutMissingField.value)
                 Spacer(modifier = Modifier.height(16.dp))
@@ -423,6 +421,7 @@ fun LogInPage() {
                 }
                 Spacer(modifier = Modifier.height(100.dp))
             }
+
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomCenter),

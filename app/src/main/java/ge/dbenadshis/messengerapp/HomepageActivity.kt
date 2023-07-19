@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -29,10 +30,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.AppBarDefaults
 import androidx.compose.material.BottomAppBar
 import androidx.compose.material.BottomNavigationItem
@@ -143,7 +146,6 @@ fun DrawAvatar(imageUri: MutableState<Uri?>, bitmap: MutableState<Bitmap?>) {
                     .clip(CircleShape)
             )
         } else {
-            // Placeholder or error image when bitmap is null
             Image(
                 painter = painterResource(R.drawable.avatar_image_placeholder),
                 contentDescription = "Profile Image",
@@ -214,112 +216,116 @@ fun ProfilePage() {
             },
             isFloatingActionButtonDocked = true,
             floatingActionButtonPosition = FabPosition.Center,
+
         ) {
-            Column(
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(it),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .verticalScroll(rememberScrollState()),
+                contentAlignment = Alignment.Center
             ) {
-                DrawAvatar(avatarUriMut, bitmap)
-                HandleMissingFieldMessage(mutMissingField.value)
-                if (curState.value == TransactionState.FINISHED_EXISTS) {
-                    Text(text = "* Nickname is already taken!", color = Color.Red)
-                }
-                TextField(
-                    value = nickname.value,
-                    onValueChange = { newNickname -> nickname.value = newNickname },
-                    colors = TextFieldDefaults.textFieldColors(
-                        backgroundColor = colorResource(id = R.color.field_color),
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent
-                    ),
-                    textStyle = TextStyle(textAlign = TextAlign.Center, fontSize = 20.sp),
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                        .padding(bottom = 16.dp)
-                        .background(Color.White)
-                        .clip(CircleShape),
-
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                )
-
-                // Profession TextField
-                TextField(
-                    value = work.value,
-                    onValueChange = { newWork -> work.value = newWork },
-                    colors = TextFieldDefaults.textFieldColors(
-                        backgroundColor = colorResource(id = R.color.field_color),
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent
-                    ),
-                    textStyle = TextStyle(textAlign = TextAlign.Center, fontSize = 20.sp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                        .padding(bottom = 16.dp)
-                        .clip(CircleShape),
-
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                    keyboardActions = KeyboardActions(onDone = {
-                        userViewModel.updateCurUser(
-                            nickname.value,
-                            work.value,
-                            avatarUriMut.value,
-                            curState,
-                            mutMissingField
-                        )
-                        focusManager.clearFocus()
-                    })
-                )
-
-                // Update Button
-                Button(
-                    onClick = {
-                        userViewModel.updateCurUser(
-                            nickname.value,
-                            work.value,
-                            avatarUriMut.value,
-                            curState,
-                            mutMissingField
-                        )
-                    },
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .fillMaxWidth(0.35f),
-                    colors = ButtonDefaults.buttonColors(
-                        backgroundColor = colorResource(id = R.color.background),
-                        disabledBackgroundColor = Color.LightGray,
-                        disabledContentColor = Color.Gray,
-                    ),
+                        .padding(it),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text("Update", color = Color.White, fontSize = 20.sp)
-                }
 
-                // Sign Out Button
-                OutlinedButton(
-                    onClick = {
-                        sharedPreferences!!.edit().clear().apply()
-                        chatViewModel.reset()
-                        chatViewModel.clearNickname()
-                        navController.navigate(Screen.Start.route)
-                    },
-                    modifier = Modifier.padding(bottom = 16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        backgroundColor = Color.White,
-                        contentColor = Color.DarkGray,
-                        disabledBackgroundColor = Color.LightGray,
-                        disabledContentColor = Color.Gray,
-                    ),
-                    border = BorderStroke(1.5.dp, Color.Gray),
-                    elevation = ButtonDefaults.elevation(0.dp)
-                ) {
-                    Text(
-                        "Sign Out",
-                        fontSize = 20.sp,
+                    DrawAvatar(avatarUriMut, bitmap)
+                    HandleMissingFieldMessage(mutMissingField.value)
+                    if (curState.value == TransactionState.FINISHED_EXISTS) {
+                        Text(text = "* Nickname is already taken!", color = Color.Red)
+                    }
+                    TextField(
+                        value = nickname.value,
+                        onValueChange = { newNickname -> nickname.value = newNickname },
+                        colors = TextFieldDefaults.textFieldColors(
+                            backgroundColor = colorResource(id = R.color.field_color),
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent
+                        ),
+                        textStyle = TextStyle(textAlign = TextAlign.Center, fontSize = 20.sp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .padding(bottom = 16.dp)
+                            .background(Color.White)
+                            .clip(CircleShape),
+
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                     )
+
+                    TextField(
+                        value = work.value,
+                        onValueChange = { newWork -> work.value = newWork },
+                        colors = TextFieldDefaults.textFieldColors(
+                            backgroundColor = colorResource(id = R.color.field_color),
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent
+                        ),
+                        textStyle = TextStyle(textAlign = TextAlign.Center, fontSize = 20.sp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .padding(bottom = 16.dp)
+                            .clip(CircleShape),
+
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = {
+                            userViewModel.updateCurUser(
+                                nickname.value,
+                                work.value,
+                                avatarUriMut.value,
+                                curState,
+                                mutMissingField
+                            )
+                            focusManager.clearFocus()
+                        })
+                    )
+
+                    Button(
+                        onClick = {
+                            userViewModel.updateCurUser(
+                                nickname.value,
+                                work.value,
+                                avatarUriMut.value,
+                                curState,
+                                mutMissingField
+                            )
+                        },
+                        modifier = Modifier
+                            .padding(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            backgroundColor = colorResource(id = R.color.background),
+                            disabledBackgroundColor = Color.LightGray,
+                            disabledContentColor = Color.Gray,
+                        ),
+                    ) {
+                        Text(" Update ", color = Color.White, fontSize = 20.sp)
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            sharedPreferences!!.edit().clear().apply()
+                            chatViewModel.reset()
+                            chatViewModel.clearNickname()
+                            navController.navigate(Screen.Start.route)
+                        },
+                        modifier = Modifier.padding(bottom = 32.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            backgroundColor = Color.White,
+                            contentColor = Color.DarkGray,
+                            disabledBackgroundColor = Color.LightGray,
+                            disabledContentColor = Color.Gray,
+                        ),
+                        border = BorderStroke(1.5.dp, Color.Gray),
+                        elevation = ButtonDefaults.elevation(0.dp)
+                    ) {
+                        Text(
+                            "Sign Out",
+                            fontSize = 20.sp,
+                        )
+                    }
                 }
             }
 
@@ -487,13 +493,27 @@ fun HomePage() {
 
             }
         ) {
-            LazyColumn(
-                modifier = Modifier.padding(it),
-                state = lazyListState,
+            if(filteredChatItems.value.isEmpty())
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(),
+                contentAlignment = Alignment.Center) {
+                    Text(
+                        text = "No active chats available!",
+                        textAlign = TextAlign.Center,
+                        color = Color.Gray
+                    )
+                }
+            else {
+                LazyColumn(
+                    modifier = Modifier.padding(it),
+                    state = lazyListState,
 
-            ) {
-                items(filteredChatItems.value) { chatItem ->
-                    ChatItem(chatItem)
+                    ) {
+                    items(filteredChatItems.value) { chatItem ->
+                        ChatItem(chatItem)
+                    }
                 }
             }
         }
@@ -579,7 +599,6 @@ fun ChatItem(chatItem: ChatItem) {
             .padding(vertical = 16.dp),
         verticalAlignment = Alignment.Top,
     ) {
-        // Profile picture
         Surface(
             shape = CircleShape,
             modifier = Modifier
@@ -596,7 +615,6 @@ fun ChatItem(chatItem: ChatItem) {
             )
         }
 
-        // Name and message
 
         Column(
             modifier = Modifier
@@ -604,10 +622,13 @@ fun ChatItem(chatItem: ChatItem) {
                 .weight(1f)
         ) {
             Text(
-                text = chatItem.key,
+                text = chatItem.user.nickname,
                 modifier = Modifier.padding(8.dp),
                 fontSize = 22.sp,
-                color = Color.DarkGray
+                color = Color.DarkGray,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+
             )
             Text(
                 text = chatItem.message,
